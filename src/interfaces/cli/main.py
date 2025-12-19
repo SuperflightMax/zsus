@@ -5,12 +5,13 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from ...infra import load_config
 from ...infra.storage_registry import StorageRegistry
-from ...core.engine import handle_command
+from ...infra.backend_factory import create_backend
+from ...core.engine import handle_command, set_default_backend
 
 
 def configure_logging(level_name: str) -> None:
@@ -18,9 +19,17 @@ def configure_logging(level_name: str) -> None:
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
 
+def _init_backend(config: Dict[str, Any]) -> Tuple[str, Any]:
+    backend_name, backend = create_backend(config)
+    logging.info("Using backend: %s", backend_name)
+    return backend_name, backend
+
+
 def run() -> None:
     config = load_config()
     configure_logging(config.get("logging", {}).get("level", "INFO"))
+    backend_name, backend = _init_backend(config)
+    set_default_backend(backend)
 
     prompt_template = _get_prompt_template(config)
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
@@ -53,6 +62,7 @@ def run() -> None:
                         registry=registry,
                         active_storage_id=active_storage_id,
                         table_max_width=table_max_width,
+                        backend_name=backend_name,
                     )
                     continue
 
@@ -100,6 +110,7 @@ def _handle_admin_command(
     registry: StorageRegistry,
     active_storage_id: Optional[str],
     table_max_width: int,
+    backend_name: str,
 ) -> Optional[str]:
     tokens = command_line[1:].strip().split()
     if not tokens:
@@ -116,6 +127,7 @@ def _handle_admin_command(
         storage_id = args[0]
         created = registry.create_storage(storage_id)
         if created:
+            handle_command({"command": "create_storage", "payload": {"storage_id": storage_id}})
             print(f"Storage created: {storage_id}")
         else:
             print(f"Storage already exists: {storage_id}")
@@ -126,6 +138,7 @@ def _handle_admin_command(
             print("Usage: +deletestorage <storage_id>")
             return active_storage_id
         storage_id = args[0]
+        handle_command({"command": "delete_storage", "payload": {"storage_id": storage_id}})
         deleted = registry.delete_storage(storage_id)
         if deleted:
             print(f"Storage deleted: {storage_id}")
@@ -173,7 +186,7 @@ def _handle_admin_command(
     if command == "status":
         print("CLI status:")
         print(f"- Active storage: {active_storage_id or 'none'}")
-        print("- Backend: in-memory")
+        print(f"- Backend: {backend_name}")
         storages = registry.list_storages()
         print(f"- Known storages: {len(storages)}")
         return active_storage_id
