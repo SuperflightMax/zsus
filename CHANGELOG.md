@@ -1,3 +1,8 @@
+# 11
+- Added LLM Interpreter that converts український текст у структурований JSON контракт core (intake/move/consume/find/list/unknown) з правилами підтвердження.
+- Introduced dedicated system prompt file and configuration via environment (`LLM_ENABLED`, `OPENAI_*`, `OPENAI_MODEL=gpt-4.1`), plus OpenAI dependency.
+- Wired CLI plain-text input through the interpreter with optional confirmation and immediate execution when безпечна та підтверджена команда, and documented LLM/CLI flow with new tests.
+
 # 10
 - Added SQLite storage backend that mirrors in-memory semantics while persisting state with per-storage database files inside each storage directory.
 - CLI now selects backend via config (`storage.backend` / `storage.sqlite_filename`) and reports the active backend in `+status`.
