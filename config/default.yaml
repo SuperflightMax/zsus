@@ -15,7 +15,7 @@ cli:
     - "quit"
   table_max_width: 24
 storage:
-  backend: "memory"
+  backend: "sqlite"
   sqlite_filename: "storage.db"
 logging:
   level: "INFO"
