@@ -106,6 +106,23 @@ Storage Bot Core — это движок учёта складов с интел
 
 ---
 
+# Storage backends
+
+- По умолчанию используется `memory` backend (несохраняемый, как в тестах ядра).
+- Для персистентности можно выбрать `sqlite` с конфигом:
+
+```yaml
+storage:
+  backend: sqlite
+  sqlite_filename: storage.db
+```
+
+SQLite backend создаёт отдельный файл базы для каждого склада в его каталоге
+(`storages/<storage_id>/storage.db` по умолчанию), повторяя поведение
+InMemoryStorageBackend без изменений core-логики.
+
+---
+
 # Continous Improvement
 
 Вопросы, дополнения, уточнения, предложения - приветствуются и ожидаются. 

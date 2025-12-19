@@ -262,6 +262,13 @@ class CoreEngine:
 _default_engine = CoreEngine(backend=InMemoryStorageBackend())
 
 
+def set_default_backend(backend: StorageBackend) -> None:
+    """Replace the module-level engine backend (used by CLI and interfaces)."""
+
+    global _default_engine
+    _default_engine = CoreEngine(backend=backend)
+
+
 def handle_command(command: Dict[str, Any]) -> Dict[str, Any]:
     """Module-level entry point used by interfaces."""
 
