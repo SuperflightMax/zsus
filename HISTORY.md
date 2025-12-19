@@ -1,3 +1,8 @@
+# 3
+- Added multiline JSON input mode to the CLI: when input starts with `{`, the CLI collects a JSON block with a dedicated prompt, finishes when braces balance or on an empty line, and forwards parsed commands to the core.
+- Added neutral error handling for malformed JSON while preserving normal text echo behavior.
+- Documented the updated CLI flow.
+
 # 2
 - Added minimal passthrough from CLI to core: JSON input is parsed, forwarded to `core.engine.handle_command`, and responses are printed back to the user while plain text is echoed unchanged.
 - Simplified `core.engine.handle_command` to validate structure (presence of `command`) and return a stub `{ "status": "ok", "data": {} }` response.
