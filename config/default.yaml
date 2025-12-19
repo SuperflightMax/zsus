@@ -1,25 +1,26 @@
 app:
-  env: dev
-
-logging:
-  level: info
-
+  name: "Storage Bot Core"
+  version: "0.1.0"
 storages:
-  root_path: ./storages
-
+  root_path: "./storages"
 core:
   audit_enabled: true
-
+  confidence_threshold: 0.7
+  language_default: "uk"
+cli:
+  prompt: "bot> "
+  exit_commands:
+    - "exit"
+    - "quit"
+logging:
+  level: "INFO"
 llm:
   enabled: false
-  confidence_threshold: 0.7
-  language_default: uk
-
 media:
   store_images: true
   store_audio: true
   max_image_size_mb: 20
   max_audio_size_mb: 20
-
-cli:
-  prompt: "bot> "
+knowledge:
+  items_path: "src/knowledge/items.yaml"
+  synonyms_path: "src/knowledge/synonyms.yaml"
