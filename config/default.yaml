@@ -8,7 +8,8 @@ core:
   confidence_threshold: 0.7
   language_default: "uk"
 cli:
-  prompt: "bot> "
+  prompt_template: "bot{storage}> "
+  json_prompt: "... "
   exit_commands:
     - "exit"
     - "quit"

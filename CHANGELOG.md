@@ -1,3 +1,6 @@
+# 4
+- Added admin CLI commands for storage management, active storage tracking, and dynamic prompt templating that injects `storage_id` into JSON commands and blocks core calls when no storage is active.
+
 # 3
 - CLI supports multiline JSON input with a dedicated prompt, finishing on balanced braces or an empty line, and keeps neutral handling of malformed JSON while preserving plain-text echo.
 

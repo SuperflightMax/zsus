@@ -1,3 +1,9 @@
+# 4
+- Added admin CLI commands (`+createstorage`, `+deletestorage`, `+liststorages`, `+activatestorage`, `+status`) that manage storages through the infrastructure registry without touching core logic.
+- Introduced in-memory `active_storage_id` handling with automatic `storage_id` injection into JSON commands and a guard message when no storage is active.
+- Implemented dynamic CLI prompt templating that reflects the active storage (`bot>` vs `bot:<storage_id>`).
+- Documented the new CLI behaviors and updated defaults for prompt configuration.
+
 # 3
 - Added multiline JSON input mode to the CLI: when input starts with `{`, the CLI collects a JSON block with a dedicated prompt, finishes when braces balance or on an empty line, and forwards parsed commands to the core.
 - Added neutral error handling for malformed JSON while preserving normal text echo behavior.
