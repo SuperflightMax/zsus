@@ -4,29 +4,22 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-REQUIRED_FIELDS = ("command", "payload")
-
 
 def handle_command(command: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate structured command and return placeholder response."""
+    """Validate and forward structured commands.
+
+    The core accepts only structured JSON commands. At this stage the function
+    performs minimal validation to confirm that the input is a dictionary and
+    contains the required ``command`` field, then returns a stub response.
+    """
 
     if not isinstance(command, dict):
         raise ValueError("Command must be a dictionary.")
 
-    for field in REQUIRED_FIELDS:
-        if field not in command:
-            raise ValueError(f"Missing required field: {field}")
-
-    if not isinstance(command["command"], str) or not command["command"]:
-        raise ValueError("Field 'command' must be a non-empty string.")
-
-    if not isinstance(command["payload"], dict):
-        raise ValueError("Field 'payload' must be a dictionary.")
+    if "command" not in command:
+        raise ValueError("Missing required field: command")
 
     return {
         "status": "ok",
-        "data": {
-            "message": "Command validated",
-            "command": command["command"],
-        },
+        "data": {},
     }
