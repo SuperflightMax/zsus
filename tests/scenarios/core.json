@@ -1,0 +1,58 @@
+{
+  "name": "core",
+  "description": "Швидка перевірка базових операцій складу",
+  "steps": [
+    {
+      "command": {
+        "command": "intake",
+        "payload": {
+          "items": [
+            { "item_id": "паливна каністра", "qty": 10, "location": null }
+          ]
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "move",
+        "payload": {
+          "item_id": "паливна каністра",
+          "qty": 4,
+          "from": null,
+          "to": "Ящик А"
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "consume",
+        "payload": {
+          "item_id": "паливна каністра",
+          "qty": 2,
+          "from": "Ящик А"
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "find",
+        "payload": {
+          "item_id": "паливна каністра"
+        }
+      },
+      "expect": {
+        "total_qty": 8
+      }
+    },
+    {
+      "command": {
+        "command": "list",
+        "payload": {}
+      },
+      "expect": "ok"
+    }
+  ]
+}

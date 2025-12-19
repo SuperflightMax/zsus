@@ -1,0 +1,55 @@
+{
+  "name": "place",
+  "description": "Масове завантаження та розкладка спорядження",
+  "steps": [
+    {
+      "command": {
+        "command": "intake",
+        "payload": {
+          "items": [
+            { "item_id": "рукавиці", "qty": 100, "location": null },
+            { "item_id": "турнікет", "qty": 50, "location": null },
+            { "item_id": "бинт", "qty": 200, "location": null },
+            { "item_id": "пляшка води", "qty": 80, "location": null }
+          ]
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "move",
+        "payload": {
+          "item_id": "бинт",
+          "qty": 100,
+          "from": null,
+          "to": "Медична коробка"
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "move",
+        "payload": {
+          "item_id": "турнікет",
+          "qty": 30,
+          "from": null,
+          "to": "Медична коробка"
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "find",
+        "payload": {
+          "item_id": "бинт"
+        }
+      },
+      "expect": {
+        "total_qty": 200
+      }
+    }
+  ]
+}

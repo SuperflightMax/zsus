@@ -1,0 +1,42 @@
+{
+  "name": "fill",
+  "description": "Демонстраційний склад з реалістичним наповненням",
+  "steps": [
+    {
+      "command": {
+        "command": "intake",
+        "payload": {
+          "items": [
+            { "item_id": "магазин АК", "qty": 30, "location": "Полиця А" },
+            { "item_id": "магазин АК", "qty": 20, "location": "Ящик 1" },
+            { "item_id": "аптечка", "qty": 15, "location": "Полиця Б" },
+            { "item_id": "батарейка до рації", "qty": 40, "location": null }
+          ]
+        }
+      },
+      "expect": "ok"
+    },
+    {
+      "command": {
+        "command": "find",
+        "payload": {
+          "item_id": "магазин АК"
+        }
+      },
+      "expect": {
+        "total_qty": 50
+      }
+    },
+    {
+      "command": {
+        "command": "find",
+        "payload": {
+          "item_id": "батарейка до рації"
+        }
+      },
+      "expect": {
+        "total_qty": 40
+      }
+    }
+  ]
+}

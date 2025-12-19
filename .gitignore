@@ -9,3 +9,4 @@ storages/
 # logs
 *.log
 .vscode/extensions.json
+notes.txt
