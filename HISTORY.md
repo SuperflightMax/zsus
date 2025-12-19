@@ -1,3 +1,8 @@
+# 7
+- Implemented a comprehensive pytest suite for the core engine validating intake, move, consume, find, list, storage isolation, and unknown command handling while enforcing response invariants and state immutability on errors.
+- Added CLI scenario runner (`+runscenario` with optional `--isolated`) that reads JSON scenarios, injects storage_id, executes steps with partial matching, reports per-step status, and cleans up temporary storages in isolated mode.
+- Updated testing documentation to reflect the implemented unit tests and the JSON-based scenario workflow, plus documented the new CLI command.
+
 # 6
 - Deferred the new core engine test suite for a later task while keeping the in-memory core implementation intact.
 - Documented the temporary removal to keep change tracking aligned with current scope.

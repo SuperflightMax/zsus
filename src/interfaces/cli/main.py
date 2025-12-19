@@ -1,10 +1,12 @@
-"""Command-line interface stub."""
+"""Command-line interface with admin commands and scenario runner."""
 
 from __future__ import annotations
 
-import logging
 import json
+import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from ...infra import load_config
 from ...infra.storage_registry import StorageRegistry
@@ -160,6 +162,27 @@ def _handle_admin_command(
         print(f"- Known storages: {len(storages)}")
         return active_storage_id
 
+    if command == "runscenario":
+        isolated = False
+        files: List[str] = []
+        for arg in args:
+            if arg == "--isolated":
+                isolated = True
+            else:
+                files.append(arg)
+
+        if not files:
+            print("Usage: +runscenario [--isolated] <file>")
+            return active_storage_id
+
+        scenario_file = files[0]
+        if not isolated and active_storage_id is None:
+            print("No active storage. Use +activatestorage or --isolated.")
+            return active_storage_id
+
+        _run_scenario(scenario_file, registry, active_storage_id, isolated)
+        return active_storage_id
+
     print(f"Unknown admin command: +{command}")
     return active_storage_id
 
@@ -221,6 +244,111 @@ def _update_brace_balance(current_balance: int, text: str) -> int:
     """Update brace balance counter based on the provided text."""
 
     return current_balance + text.count("{") - text.count("}")
+
+
+def _run_scenario(
+    file_path: str,
+    registry: StorageRegistry,
+    active_storage_id: Optional[str],
+    isolated: bool,
+) -> None:
+    """Execute a JSON scenario file step-by-step."""
+
+    scenario_storage = active_storage_id
+    created_temp_storage = False
+
+    if isolated:
+        scenario_storage = f"scenario_{uuid4().hex[:8]}"
+        registry.create_storage(scenario_storage)
+        handle_command({"command": "create_storage", "payload": {"storage_id": scenario_storage}})
+        created_temp_storage = True
+        print(f"[scenario] Temporary storage created: {scenario_storage}")
+
+    try:
+        payload = _load_scenario_file(file_path)
+    except ValueError as exc:
+        print(f"[scenario] Failed to load scenario: {exc}")
+        if created_temp_storage:
+            _cleanup_scenario_storage(registry, scenario_storage)
+        return
+
+    steps = payload.get("steps") or []
+    name = payload.get("name") or Path(file_path).stem
+
+    print(f"[scenario] Running: {name}")
+    success = True
+
+    for idx, step in enumerate(steps, start=1):
+        command = step.get("command")
+        expect = step.get("expect")
+
+        if not isinstance(command, dict):
+            print(f"[scenario] Step {idx}: invalid command format, expected object.")
+            success = False
+            break
+
+        command_with_storage = dict(command)
+        command_with_storage["storage_id"] = command.get("storage_id") or scenario_storage
+
+        response = handle_command(command_with_storage)
+        matches = _match_expect(expect, response)
+
+        status_label = "OK" if matches else "FAIL"
+        print(f"[scenario] Step {idx}")
+        print("  command:", json.dumps(command_with_storage, ensure_ascii=False))
+        print("  result :", json.dumps(response, ensure_ascii=False))
+        print(f"  status : {status_label}")
+
+        if not matches:
+            success = False
+            break
+
+    if success:
+        print("[scenario] Scenario PASSED")
+    else:
+        print("[scenario] Scenario FAILED")
+
+    if created_temp_storage:
+        _cleanup_scenario_storage(registry, scenario_storage)
+
+
+def _cleanup_scenario_storage(registry: StorageRegistry, storage_id: Optional[str]) -> None:
+    if not storage_id:
+        return
+    handle_command({"command": "delete_storage", "payload": {"storage_id": storage_id}})
+    registry.delete_storage(storage_id)
+    print(f"[scenario] Temporary storage deleted: {storage_id}")
+
+
+def _load_scenario_file(file_path: str) -> Dict[str, Any]:
+    path = Path(file_path)
+    if not path.exists():
+        raise ValueError(f"File not found: {file_path}")
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON: {exc}") from exc
+
+
+def _match_expect(expect: Any, response: Dict[str, Any]) -> bool:
+    if expect == "ok":
+        return response.get("status") == "ok"
+    if isinstance(expect, dict):
+        return _is_partial_match(expect, response)
+    return False
+
+
+def _is_partial_match(expected: Any, actual: Any) -> bool:
+    """Recursively check if expected is a subset of actual."""
+    if isinstance(expected, dict):
+        if not isinstance(actual, dict):
+            return False
+        return all(key in actual and _is_partial_match(value, actual[key]) for key, value in expected.items())
+    if isinstance(expected, list):
+        if not isinstance(actual, list) or len(expected) > len(actual):
+            return False
+        return all(_is_partial_match(exp, act) for exp, act in zip(expected, actual))
+    return expected == actual
 
 
 if __name__ == "__main__":
