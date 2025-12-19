@@ -9,11 +9,11 @@
 
 Справочник предметов, которые присутствовали на складе.
 ```
-| field        | type        | description |
-|-------------|------------|-------------|
-| id          | string     | нормализованный item_id |
-| name        | string     | человеко-читаемое имя |
-| created_at | datetime   | дата первого появления |
+| field       | type       | description              |
+|-------------|------------|--------------------------|
+| id          | string     | нормализованный item_id  |
+| name        | string     | человеко-читаемое имя    |
+| created_at  | datetime   | дата первого появления   |
 ```
 ---
 
@@ -21,11 +21,11 @@
 
 Справочник локаций внутри склада.
 ```
-| field        | type      | description |
-|-------------|----------|-------------|
-| id          | string   | location_id |
-| name        | string   | имя локации |
-| created_at | datetime | дата создания |
+| field       | type     | description   |
+|-------------|----------|---------------|
+| id          | string   | location_id   |
+| name        | string   | имя локации   |
+| created_at  | datetime | дата создания |
 ```
 ---
 
@@ -33,11 +33,11 @@
 
 Текущее состояние склада (остатки).
 ```
-| field        | type      | description |
-|-------------|----------|-------------|
-| item_id     | string   | ссылка на items.id |
-| location_id | string \| null | null = без локации |
-| qty         | integer  | количество |
+| field       | type     | description               |
+|-------------|----------|---------------------------|
+| item_id     | string   | ссылка на items.id        |
+| location_id | string \ | null | null = без локации |
+| qty         | integer  | количество                |
 ```
 **Уникальный ключ:** `(item_id, location_id)`
 
@@ -47,16 +47,16 @@
 
 История движений (журнал операций).
 ```
-| field        | type      | description |
-|-------------|----------|-------------|
-| id          | integer  | primary key |
-| type        | string   | intake / move / etc |
-| item_id     | string   | предмет |
-| qty         | integer  | количество |
-| from_location | string \| null | откуда |
-| to_location   | string \| null | куда |
-| created_at | datetime | время операции |
-| meta        | json     | источник (text/image/audio) |
+| field         | type     | description |
+|---------------|----------|-------------|
+| id            | integer  | primary key |
+| type          | string   | intake / move / etc |
+| item_id       | string   | предмет |
+| qty           | integer  | количество |
+| from_location | string \ | null | откуда |
+| to_location   | string \ | null | куда |
+| created_at    | datetime | время операции |
+| meta          | json     | источник (text/image/audio) |
 ```
 ---
 
@@ -64,10 +64,11 @@
 
 Технические данные склада.
 ```
-| field | type | description |
-|------|------|-------------|
-| key  | string |
-| value | string |
+| field | type   | description |
+|-------|--------|-------------|
+| key   | string |             |
+| value | string |             |
+
 ```
 
 ---
