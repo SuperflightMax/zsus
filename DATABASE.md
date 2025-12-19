@@ -8,7 +8,7 @@
 ## items
 
 Справочник предметов, которые присутствовали на складе.
-```mermaid
+```
 | field        | type        | description |
 |-------------|------------|-------------|
 | id          | string     | нормализованный item_id |
@@ -20,7 +20,7 @@
 ## locations
 
 Справочник локаций внутри склада.
-```mermaid
+```
 | field        | type      | description |
 |-------------|----------|-------------|
 | id          | string   | location_id |
@@ -32,7 +32,7 @@
 ## stock
 
 Текущее состояние склада (остатки).
-```mermaid
+```
 | field        | type      | description |
 |-------------|----------|-------------|
 | item_id     | string   | ссылка на items.id |
@@ -46,7 +46,7 @@
 ## movements
 
 История движений (журнал операций).
-```mermaid
+```
 | field        | type      | description |
 |-------------|----------|-------------|
 | id          | integer  | primary key |
@@ -63,7 +63,7 @@
 ## meta (опционально)
 
 Технические данные склада.
-```mermaid
+```
 | field | type | description |
 |------|------|-------------|
 | key  | string |
