@@ -334,21 +334,15 @@ def _match_expect(expect: Any, response: Dict[str, Any]) -> bool:
     if expect == "ok":
         return response.get("status") == "ok"
     if isinstance(expect, dict):
-        return _is_partial_match(expect, response)
+        if response.get("status") != "ok":
+            return False
+
+        data = response.get("data")
+        if not isinstance(data, dict):
+            return False
+
+        return all(key in data and data[key] == value for key, value in expect.items())
     return False
-
-
-def _is_partial_match(expected: Any, actual: Any) -> bool:
-    """Recursively check if expected is a subset of actual."""
-    if isinstance(expected, dict):
-        if not isinstance(actual, dict):
-            return False
-        return all(key in actual and _is_partial_match(value, actual[key]) for key, value in expected.items())
-    if isinstance(expected, list):
-        if not isinstance(actual, list) or len(expected) > len(actual):
-            return False
-        return all(_is_partial_match(exp, act) for exp, act in zip(expected, actual))
-    return expected == actual
 
 
 if __name__ == "__main__":

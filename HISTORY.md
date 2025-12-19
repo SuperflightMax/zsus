@@ -1,3 +1,7 @@
+# 8
+- Relaxed scenario runner expectation checks: `"ok"` now verifies only status, and dict expectations validate only specified keys inside `data` while allowing extra fields, keeping status required to be `ok`.
+- Added targeted tests for the new expectation semantics to lock in the partial-match behavior.
+
 # 7
 - Implemented a comprehensive pytest suite for the core engine validating intake, move, consume, find, list, storage isolation, and unknown command handling while enforcing response invariants and state immutability on errors.
 - Added CLI scenario runner (`+runscenario` with optional `--isolated`) that reads JSON scenarios, injects storage_id, executes steps with partial matching, reports per-step status, and cleans up temporary storages in isolated mode.
