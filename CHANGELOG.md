@@ -1,3 +1,7 @@
+# 7
+- Added full pytest suite for the core engine covering intake, move, consume, find, list, storage isolation, and unknown commands with invariant checks.
+- Extended CLI with JSON scenario runner (`+runscenario` / `--isolated`) that executes steps with per-step output and temporary storage lifecycle.
+
 # 6
 - Deferred the new core engine tests for now; core functionality remains available via the in-memory backend.
 
