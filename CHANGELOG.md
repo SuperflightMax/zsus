@@ -1,6 +1,3 @@
-# 5
-- Added in-memory `CoreEngine` with `StorageBackend` abstraction, implementing `intake`, `move`, `consume`, `list`, and `find` commands with validation and deterministic responses, plus core tests.
-
 # 4
 - Added admin CLI commands for storage management, active storage tracking, and dynamic prompt templating that injects `storage_id` into JSON commands and blocks core calls when no storage is active.
 

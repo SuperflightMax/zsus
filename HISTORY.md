@@ -1,9 +1,3 @@
-# 5
-- Implemented a real in-memory `CoreEngine` with a `StorageBackend` abstraction and default `InMemoryStorageBackend`, enabling deterministic stateful operations without external storage.
-- Added full command handling for `intake`, `move`, `consume`, `list`, and `find`, including validation, error responses, and per-location aggregation.
-- Provided module-level `handle_command` for interfaces while keeping `CoreEngine` instantiable for tests and development.
-- Added core tests covering the new command behaviors and edge cases.
-
 # 4
 - Added admin CLI commands (`+createstorage`, `+deletestorage`, `+liststorages`, `+activatestorage`, `+status`) that manage storages through the infrastructure registry without touching core logic.
 - Introduced in-memory `active_storage_id` handling with automatic `storage_id` injection into JSON commands and a guard message when no storage is active.
