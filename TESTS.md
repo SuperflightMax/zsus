@@ -59,6 +59,7 @@ assert:
   items:
     radio:
       qty: 15
+```
 
 ### Типы шагов:
 
@@ -76,5 +77,6 @@ assert:
 
 ```yaml
 requires_llm: true
+```
 
 И отключены по умолчанию.

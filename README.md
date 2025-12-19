@@ -86,17 +86,17 @@ Storage Bot Core — это движок учёта складов с интел
 
 ---
 
-## Essenial documents
+# Essenial documents
 
-MUST READ. MUST FOLLOW. 
+**MUST READ. MUST FOLLOW.**
 
-DESIGN.md - описание системы, основные принципы, цели
-ARCHITECTURE.md - принципы разработки, структура кода
-COMMANDS.md - команды ядра
-TESTS.md - формат тестов и сценариев
+**DESIGN.m**d - описание системы, основные принципы, цели
+**ARCHITECTURE.md** - принципы разработки, структура кода
+**COMMANDS.md** - команды ядра
+**TESTS.md** - формат тестов и сценариев
 
 ---
 
-## Continous Improvement
+# Continous Improvement
 
 Вопросы, дополнения, уточнения, предложения - приветствуются и ожидаются. 

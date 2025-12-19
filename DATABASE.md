@@ -8,37 +8,37 @@
 ## items
 
 Справочник предметов, которые присутствовали на складе.
-
+```mermaid
 | field        | type        | description |
 |-------------|------------|-------------|
 | id          | string     | нормализованный item_id |
 | name        | string     | человеко-читаемое имя |
 | created_at | datetime   | дата первого появления |
-
+```
 ---
 
 ## locations
 
 Справочник локаций внутри склада.
-
+```mermaid
 | field        | type      | description |
 |-------------|----------|-------------|
 | id          | string   | location_id |
 | name        | string   | имя локации |
 | created_at | datetime | дата создания |
-
+```
 ---
 
 ## stock
 
 Текущее состояние склада (остатки).
-
+```mermaid
 | field        | type      | description |
 |-------------|----------|-------------|
 | item_id     | string   | ссылка на items.id |
 | location_id | string \| null | null = без локации |
 | qty         | integer  | количество |
-
+```
 **Уникальный ключ:** `(item_id, location_id)`
 
 ---
@@ -46,7 +46,7 @@
 ## movements
 
 История движений (журнал операций).
-
+```mermaid
 | field        | type      | description |
 |-------------|----------|-------------|
 | id          | integer  | primary key |
@@ -57,18 +57,18 @@
 | to_location   | string \| null | куда |
 | created_at | datetime | время операции |
 | meta        | json     | источник (text/image/audio) |
-
+```
 ---
 
 ## meta (опционально)
 
 Технические данные склада.
-
+```mermaid
 | field | type | description |
 |------|------|-------------|
 | key  | string |
 | value | string |
-
+```
 
 ---
 
@@ -104,7 +104,7 @@ CREATE TABLE items (
     name TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
+```
 id — нормализованный item_id (используется ядром)
 name — опционально, для удобства
 предмет создаётся при первом intake, если отсутствует
@@ -121,7 +121,7 @@ CREATE TABLE locations (
     name TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
+```
 отсутствие записи = локация не используется
 предмет может существовать без локации (NULL)
 
@@ -145,7 +145,7 @@ CREATE TABLE stock (
     FOREIGN KEY (location_id) REFERENCES locations(id)
         ON DELETE SET NULL
 );
-
+```
 location_id = NULL → предмет просто на складе
 уникальность (item_id, location_id)
 всегда хранит текущее состояние
@@ -172,7 +172,7 @@ CREATE TABLE movements (
 
     meta JSON
 );
-
+```
 type: intake, move, adjust, etc
 from_location и to_location могут быть NULL
 
@@ -200,7 +200,7 @@ CREATE TABLE meta (
     key TEXT PRIMARY KEY,
     value TEXT
 );
-
+```
 Примеры:
 версия схемы
 дата создания склада

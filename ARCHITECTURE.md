@@ -15,6 +15,7 @@ _(как устроен код и классы, по-человечески)_
 
 ## Общая структура проекта
 
+```mermaid
 src/
 ├─ core/ # бизнес-логика
 ├─ llm/ # интерпретация намерений
@@ -26,13 +27,13 @@ tests/
 ├─ core/
 ├─ scenarios/
 └─ media/
-
+```
 ---
 
 ## core/
 
 Содержит **только бизнес-логику**.
-
+```mermaid
 - entities/
   - Item
   - Location
@@ -45,7 +46,7 @@ tests/
   - StorageRepository
 - engine.py
   - точка входа для команд
-
+```
 core не импортирует ничего из llm, media или interfaces.
 
 ---

@@ -40,6 +40,7 @@ Storage Bot Core — это система складского учёта с и
 
 ### 3.2. Пример структуры хранения
 
+```mermaid
 storages/
 ├─ kharkiv_1/
 │ ├─ db.sqlite
@@ -50,7 +51,7 @@ storages/
 ├─ kyiv_2/
 │ └─ ...
 └─ registry.json
-
+```
 
 `registry` используется для хранения информации о существующих складах и их конфигурации.
 Он не содержит бизнес-логики.
@@ -118,6 +119,7 @@ storages/
     ]
   }
 }
+```
 
 ---
 
@@ -171,7 +173,7 @@ LLM формирует черновой список предметов
     { "item_id": "bolt", "qty": 8 }
   ]
 }
-
+```
 Пользователю задаётся вопрос на подтверждение:
 «Додати все на склад?»
 Только после явного подтверждения формируется команда ядру.
@@ -293,7 +295,40 @@ Manual tests:
 
 ---
 
-## 14. Расширение в будущем
+## 14. Configuration Management
+
+The system follows a strict no-magic-numbers policy.
+
+All parameters that may affect behavior, limits, thresholds,
+or environment-specific behavior must be configurable.
+
+### Configuration Levels
+
+1. Global configuration
+   - base defaults for the whole system
+
+2. Storage-level configuration
+   - optional overrides per storage
+   - only explicitly defined values override global defaults
+
+Configuration is resolved using a cascading merge strategy.
+
+### Principles
+
+- business logic never hardcodes configurable values
+- configuration is read-only for core logic
+- missing values always fall back to global defaults
+- configuration files are explicit and human-readable
+
+This approach allows:
+- per-storage customization
+- safe experimentation
+- predictable behavior across environments
+
+
+---
+
+## 99. Расширение в будущем
 
 Архитектура предусматривает:
 
