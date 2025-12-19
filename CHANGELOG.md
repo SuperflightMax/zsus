@@ -1,3 +1,7 @@
+# 8
+- Adjusted scenario runner expectation matching to treat dict expectations as partial checks against `data` (status must be `ok`, extra fields allowed) and keep `"ok"` as a status-only check.
+- Added unit tests covering the relaxed expectation semantics to prevent regressions.
+
 # 7
 - Added full pytest suite for the core engine covering intake, move, consume, find, list, storage isolation, and unknown commands with invariant checks.
 - Extended CLI with JSON scenario runner (`+runscenario` / `--isolated`) that executes steps with per-step output and temporary storage lifecycle.
