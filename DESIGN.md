@@ -40,7 +40,7 @@ Storage Bot Core — это система складского учёта с и
 
 ### 3.2. Пример структуры хранения
 
-```mermaid
+```
 storages/
 ├─ kharkiv_1/
 │ ├─ db.sqlite
