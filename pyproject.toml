@@ -1,0 +1,19 @@
+[project]
+name = "storage-bot-core"
+version = "0.1.0"
+description = "Core engine for multi-storage accounting with LLM-based interfaces"
+requires-python = ">=3.10,<3.15"
+
+dependencies = [
+  "pyyaml>=6.0",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

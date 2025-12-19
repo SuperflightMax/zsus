@@ -1,0 +1,25 @@
+app:
+  env: dev
+
+logging:
+  level: info
+
+storages:
+  root_path: ./storages
+
+core:
+  audit_enabled: true
+
+llm:
+  enabled: false
+  confidence_threshold: 0.7
+  language_default: uk
+
+media:
+  store_images: true
+  store_audio: true
+  max_image_size_mb: 20
+  max_audio_size_mb: 20
+
+cli:
+  prompt: "bot> "
