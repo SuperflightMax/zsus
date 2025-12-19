@@ -13,6 +13,7 @@ cli:
   exit_commands:
     - "exit"
     - "quit"
+  table_max_width: 24
 logging:
   level: "INFO"
 llm:

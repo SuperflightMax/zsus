@@ -25,6 +25,7 @@ def run() -> None:
     prompt_template = _get_prompt_template(config)
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
     exit_commands = config.get("cli", {}).get("exit_commands", ["exit"])
+    table_max_width = config.get("cli", {}).get("table_max_width", 24)
     registry = StorageRegistry(config)
     active_storage_id: Optional[str] = None
 
@@ -51,6 +52,7 @@ def run() -> None:
                         user_input,
                         registry=registry,
                         active_storage_id=active_storage_id,
+                        table_max_width=table_max_width,
                     )
                     continue
 
@@ -97,6 +99,7 @@ def _handle_admin_command(
     command_line: str,
     registry: StorageRegistry,
     active_storage_id: Optional[str],
+    table_max_width: int,
 ) -> Optional[str]:
     tokens = command_line[1:].strip().split()
     if not tokens:
@@ -153,6 +156,19 @@ def _handle_admin_command(
             return active_storage_id
         print(f"Active storage set to: {storage_id}")
         return storage_id
+
+    if command == "listitems":
+        if not active_storage_id:
+            print("No active storage. Use +activatestorage first.")
+            return active_storage_id
+
+        response = handle_command({"command": "list", "storage_id": active_storage_id, "payload": {}})
+        if response.get("status") != "ok":
+            print(f"Error: {response.get('error', 'Unknown error')}")
+            return active_storage_id
+
+        _print_storage_table(response.get("data") or {}, max_width=table_max_width)
+        return active_storage_id
 
     if command == "status":
         print("CLI status:")
@@ -343,6 +359,38 @@ def _match_expect(expect: Any, response: Dict[str, Any]) -> bool:
 
         return all(key in data and data[key] == value for key, value in expect.items())
     return False
+
+
+def _print_storage_table(snapshot: Dict[str, Dict[str, int]], max_width: int) -> None:
+    if not snapshot:
+        print("(storage is empty)")
+        return
+
+    rows = []
+    for item_id in sorted(snapshot.keys()):
+        locations = snapshot[item_id]
+        for location_key in sorted(locations.keys()):
+            qty = locations[location_key]
+            item_display = _truncate_text(item_id, max_width)
+            location_display = "(unplaced)" if location_key == "null" else _truncate_text(str(location_key), max_width)
+            rows.append((item_display, location_display, qty))
+
+    item_width = max([len("Item")] + [len(row[0]) for row in rows])
+    location_width = max([len("Location")] + [len(row[1]) for row in rows])
+    qty_width = max([len("Qty")] + [len(str(row[2])) for row in rows])
+
+    header = f"{'Item':<{item_width}}  {'Location':<{location_width}}  {'Qty':>{qty_width}}"
+    separator = f"{'-' * item_width}  {'-' * location_width}  {'-' * qty_width}"
+    print(header)
+    print(separator)
+    for item_display, location_display, qty in rows:
+        print(f"{item_display:<{item_width}}  {location_display:<{location_width}}  {qty:>{qty_width}}")
+
+
+def _truncate_text(value: str, max_width: int) -> str:
+    if max_width < 4:
+        return value[:max_width]
+    return value if len(value) <= max_width else value[: max_width - 3] + "..."
 
 
 if __name__ == "__main__":
