@@ -1,3 +1,7 @@
+# 9
+- Added admin CLI command `+listitems` to print the active storage contents as a readable table with configurable truncation (`cli.table_max_width`, default 24).
+- Documented the core `list` command and updated CLI docs to cover the new admin command.
+
 # 8
 - Adjusted scenario runner expectation matching to treat dict expectations as partial checks against `data` (status must be `ok`, extra fields allowed) and keep `"ok"` as a status-only check.
 - Added unit tests covering the relaxed expectation semantics to prevent regressions.

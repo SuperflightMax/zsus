@@ -1,3 +1,8 @@
+# 9
+- Added admin CLI command `+listitems` that prints active storage contents as a readable table, with `(unplaced)` shown for `null` locations and truncation for long values based on `cli.table_max_width` (default 24).
+- Documented the core `list` command contract and updated CLI documentation to cover the new admin output and truncation behavior.
+- Introduced a CLI configuration option `table_max_width` in `config/default.yaml` to tune table readability without code changes.
+
 # 8
 - Relaxed scenario runner expectation checks: `"ok"` now verifies only status, and dict expectations validate only specified keys inside `data` while allowing extra fields, keeping status required to be `ok`.
 - Added targeted tests for the new expectation semantics to lock in the partial-match behavior.
