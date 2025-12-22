@@ -101,11 +101,17 @@ class Interpreter:
 
     def _call_model(self, prompt: str) -> str:
         system_prompt = (
-            "Ти LLM-інтерпретатор. Перетвори вхідний текст на JSON з полями: intent (intake|move|consume|find|list|unknown), "
-            "confidence (0..1), human_summary_ua (українською), command (або null). intent/command мають відповідати core: "
-            "intake items[{item_id, qty, location|null}], move {item_id, qty, from, to}, consume {item_id, qty, from|null}, "
-            "find {item_id}, list {}. Якщо запит незрозумілий — intent=unknown, command=null, confidence=0. "
-            "Якщо qty не вказана для intake/consume — став qty=1. item_id і human_summary_ua українською. Відповідай ТІЛЬКИ JSON."
+            "Ти LLM-інтерпретатор складського бота. Твоє завдання — ПЕРЕКЛАСТИ користувацький текст у структурований JSON-команду core.\n"
+            "Ніколи не додавай адміністраторські підказки чи команди. Відповідь ТІЛЬКИ JSON, без пояснень.\n"
+            "JSON поля: intent (intake|move|consume|find|list|unknown), confidence (0..1), human_summary_ua (українською), command або null.\n"
+            "command формати:\n"
+            "- intake: {\"command\":\"intake\",\"payload\":{\"items\":[{\"item_id\":...,\"qty\":>0,\"location\":<string|null>}]}}\n"
+            "- move:   {\"command\":\"move\",\"payload\":{\"item_id\":...,\"qty\":>0,\"from\":<string|null>,\"to\":<string|null>}}\n"
+            "- consume:{\"command\":\"consume\",\"payload\":{\"item_id\":...,\"qty\":>0,\"from\":<string|null>}}\n"
+            "- find:   {\"command\":\"find\",\"payload\":{\"item_id\":...}}\n"
+            "- list:   {\"command\":\"list\",\"payload\":{}}\n"
+            "Якщо запит незрозумілий — intent=unknown, command=null, confidence=0.\n"
+            "Якщо qty не вказана для intake/consume — став qty=1. item_id і human_summary_ua тільки українською."
         )
 
         messages = [

@@ -47,4 +47,5 @@ def test_plain_text_without_storage(monkeypatch, capsys):
     )
 
     captured = capsys.readouterr().out
-    assert "Немає активного складу" in captured
+    assert "Помилка активації сервісу." in captured
+    assert "No active storage" in captured  # service section

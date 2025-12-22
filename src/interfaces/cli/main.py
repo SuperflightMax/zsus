@@ -304,7 +304,8 @@ def _handle_plain_text_input(
     }
 
     if command and not active_storage_id:
-        _print_service_and_user(service_payload, "Немає активного складу. Використайте +activatestorage.")
+        service_payload["error"] = "No active storage. Command not executed."
+        _print_service_and_user(service_payload, "Помилка активації сервісу.")
         return active_storage_id
 
     response: Optional[Dict[str, Any]] = None

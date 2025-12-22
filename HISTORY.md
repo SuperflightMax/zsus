@@ -1,7 +1,7 @@
 # 11
-- Implemented a lightweight, rule-based `LLMInterpreter` that maps mixed-language text into core intents (`intake`, `move`, `consume`, `find`, `list`, or `unknown`), assigns confidence, applies default qty=1 for intake/consume, and produces UA summaries with conservative fallback.
-- Integrated the CLI plain-text path with the interpreter: non-admin, non-JSON input now prints SERVICE/USER sections, executes only when confidence meets the configurable threshold, injects `storage_id`, and otherwise responds with a UA “не зрозумів” message without running core commands.
-- Added interpreter unit tests plus CLI output/guard tests to ensure SERVICE/USER separation and storage guards for inferred commands.
+- Implemented an OpenAI GPT-4.1–backed `LLMInterpreter` that maps mixed-language text into core intents (`intake`, `move`, `consume`, `find`, `list`, or `unknown`), assigns confidence, applies default qty=1 for intake/consume, and produces UA summaries with conservative fallback.
+- Integrated the CLI plain-text path with the interpreter: non-admin, non-JSON input now prints SERVICE/USER sections, executes only when confidence meets the configurable threshold, injects `storage_id`, and, if no storage is active, returns a generic activation-error message to USER while keeping details in SERVICE.
+- Added interpreter unit tests with stubbed LLM responses plus CLI output/guard tests to ensure SERVICE/USER separation and storage guards for inferred commands.
 
 # 10
 - Implemented a SQLite storage backend that follows the existing StorageBackend contract, using per-storage database files (`storages/<storage_id>/storage.db` by default) to persist state across CLI runs.
