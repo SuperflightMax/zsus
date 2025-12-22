@@ -3,18 +3,14 @@ pyproject.toml
 src/__init__.py
 src/core/__init__.py
 src/core/engine.py
-src/core/backends/__init__.py
-src/core/backends/sqlite_backend.py
 src/core/repositories/__init__.py
 src/infra/__init__.py
-src/infra/backend_factory.py
 src/infra/storage_registry.py
 src/interfaces/cli/__init__.py
 src/interfaces/cli/main.py
 src/knowledge/__init__.py
 src/llm/__init__.py
 src/llm/interpreter.py
-src/llm/system_prompt.py
 src/media/__init__.py
 src/media/audio.py
 src/storage_bot_core.egg-info/PKG-INFO
@@ -22,5 +18,3 @@ src/storage_bot_core.egg-info/SOURCES.txt
 src/storage_bot_core.egg-info/dependency_links.txt
 src/storage_bot_core.egg-info/requires.txt
 src/storage_bot_core.egg-info/top_level.txt
-tests/test_placeholder.py
-tests/test_scenario_expect.py

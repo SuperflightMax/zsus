@@ -22,7 +22,6 @@ class InterpreterResult:
     human_summary: str
     command: Optional[Dict[str, Any]]
     questions: List[str]
-    debug: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -32,7 +31,6 @@ class InterpreterResult:
             "human_summary": self.human_summary,
             "command": self.command,
             "questions": self.questions,
-            "debug": self.debug or {},
         }
 
 
@@ -44,7 +42,6 @@ class Interpreter:
         self._client = client
 
     def interpret(self, text: str) -> Dict[str, Any]:
-        debug: Dict[str, Any] = {}
         if not self._is_enabled():
             result = InterpreterResult(
                 intent="unknown",
@@ -53,21 +50,18 @@ class Interpreter:
                 human_summary="LLM недоступний, інтерпретація не виконана.",
                 command=None,
                 questions=["Спробуйте пізніше або увімкніть LLM."],
-                debug={"error": "LLM disabled"},
             )
             return result.to_dict()
 
         try:
             raw_json = self._call_llm(text)
-            debug["raw_llm_response"] = raw_json
             parsed = self._safe_load_json(raw_json)
-        except Exception as exc:  # noqa: BLE001
+        except Exception:
             # Defensive fallback to unknown intent on any error.
-            debug["error"] = str(exc)
             parsed = None
 
         if not isinstance(parsed, dict):
-            return self._fallback_unknown("Не вдалося інтерпретувати запит.", debug).to_dict()
+            return self._fallback_unknown("Не вдалося інтерпретувати запит.").to_dict()
 
         normalized = self._normalize_response(parsed)
         threshold = self._confidence_threshold()
@@ -82,7 +76,6 @@ class Interpreter:
 
         normalized.command = validated_command
         normalized.needs_confirmation = needs_confirmation
-        normalized.debug = debug
         return normalized.to_dict()
 
     def _is_enabled(self) -> bool:
@@ -268,7 +261,7 @@ class Interpreter:
         except (TypeError, ValueError):
             return False
 
-    def _fallback_unknown(self, summary: str, debug: Optional[Dict[str, Any]] = None) -> InterpreterResult:
+    def _fallback_unknown(self, summary: str) -> InterpreterResult:
         return InterpreterResult(
             intent="unknown",
             confidence=0.0,
@@ -276,5 +269,4 @@ class Interpreter:
             human_summary=summary,
             command=None,
             questions=["Спробуйте уточнити запит."],
-            debug=debug,
         )
