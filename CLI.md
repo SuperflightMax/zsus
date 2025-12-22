@@ -27,6 +27,24 @@ Backend выбирается конфигом (`storage.backend`): `memory` (п�
 с именем файла `storage.sqlite_filename` (по умолчанию `storage.db`), который создаётся
 в каталоге склада. Статус показывает текущий выбранный backend.
 
+## Plain text flow
+
+- Нормальный текст (не JSON и не admin-команда) отправляется в LLMInterpreter.
+- Interpreter возвращает `intent`, `confidence`, `human_summary_ua`, `command` (или `null`).
+- CLI выводит две секции:
+  - SERVICE: intent, confidence, сформированный command JSON, ответ ядра (если вызван) или ошибки.
+  - USER: только `human_summary_ua` (без JSON и ошибок).
+  Разделитель:
+  ```
+  --- SERVICE --------------------------------
+  ...json...
+  --- USER -----------------------------------
+  ...text...
+  --------------------------------------------
+  ```
+- Команда выполняется только если `intent != unknown`, `command` не `null`, и `confidence` ≥ порога (`core.confidence_threshold`, по умолчанию 0.7). Иначе — только сообщение пользователю.
+- Если нет активного склада, команды не исполняются, отображается предупреждение в USER.
+
 ## Prompt
 
 Промпт формируется по шаблону `cli.prompt_template` (по умолчанию `bot{storage}> `):

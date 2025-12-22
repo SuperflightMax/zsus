@@ -12,6 +12,7 @@ from ...infra import load_config
 from ...infra.storage_registry import StorageRegistry
 from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
+from ...llm.interpreter import Interpreter
 
 
 def configure_logging(level_name: str) -> None:
@@ -30,6 +31,8 @@ def run() -> None:
     configure_logging(config.get("logging", {}).get("level", "INFO"))
     backend_name, backend = _init_backend(config)
     set_default_backend(backend)
+    interpreter = Interpreter(config)
+    confidence_threshold = float(config.get("core", {}).get("confidence_threshold", 0.7))
 
     prompt_template = _get_prompt_template(config)
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
@@ -80,7 +83,12 @@ def run() -> None:
                         json_lines = []
                         brace_balance = 0
                 else:
-                    print(user_input)
+                    active_storage_id = _handle_plain_text_input(
+                        user_input,
+                        interpreter=interpreter,
+                        active_storage_id=active_storage_id,
+                        confidence_threshold=confidence_threshold,
+                    )
             else:
                 json_lines.append(user_input)
                 brace_balance = _update_brace_balance(brace_balance, user_input)
@@ -273,6 +281,61 @@ def _update_brace_balance(current_balance: int, text: str) -> int:
     """Update brace balance counter based on the provided text."""
 
     return current_balance + text.count("{") - text.count("}")
+
+
+def _handle_plain_text_input(
+    text: str,
+    interpreter: Interpreter,
+    active_storage_id: Optional[str],
+    confidence_threshold: float,
+) -> Optional[str]:
+    """Interpret plain text via LLM interpreter and optionally execute core command."""
+
+    result = interpreter.interpret(text)
+    intent = result.get("intent")
+    confidence = float(result.get("confidence") or 0.0)
+    command = result.get("command")
+    human_summary = result.get("human_summary_ua") or "Не зрозумів запит. Спробуйте переформулювати."
+
+    service_payload: Dict[str, Any] = {
+        "intent": intent,
+        "confidence": confidence,
+        "command": command,
+    }
+
+    if command and not active_storage_id:
+        _print_service_and_user(service_payload, "Немає активного складу. Використайте +activatestorage.")
+        return active_storage_id
+
+    response: Optional[Dict[str, Any]] = None
+    executed = False
+
+    if intent != "unknown" and command and confidence >= confidence_threshold:
+        command_with_storage = dict(command)
+        command_with_storage["storage_id"] = active_storage_id
+        response = handle_command(command_with_storage)
+        executed = True
+        service_payload["engine_response"] = response
+        if response.get("status") != "ok":
+            human_summary = f"Помилка: {response.get('error', 'невідома помилка')}"
+        # keep interpreter summary for successful cases
+
+    if not executed and (intent == "unknown" or not command or confidence < confidence_threshold):
+        # reinforce conservative fallback wording
+        human_summary = human_summary or "Не зрозумів запит. Спробуйте переформулювати."
+
+    _print_service_and_user(service_payload, human_summary)
+    return active_storage_id
+
+
+def _print_service_and_user(service_data: Dict[str, Any], user_text: str) -> None:
+    """Print separated SERVICE and USER sections to the console."""
+
+    print("--- SERVICE --------------------------------")
+    print(json.dumps(service_data, ensure_ascii=False, indent=2))
+    print("--- USER -----------------------------------")
+    print(user_text)
+    print("--------------------------------------------")
 
 
 def _run_scenario(

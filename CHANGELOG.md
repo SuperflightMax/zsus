@@ -1,3 +1,8 @@
+# 11
+- Added a rule-based `LLMInterpreter` that converts free-form UA/RU/mixed text into structured core commands with confidence and UA summaries, defaulting to safe unknown responses when uncertain.
+- Wired CLI plain-text flow through the interpreter with SERVICE/USER output separation and confidence gating against configurable thresholds.
+- Added tests for interpreter intents and CLI text handling to lock in the new behaviors.
+
 # 10
 - Added SQLite storage backend that mirrors in-memory semantics while persisting state with per-storage database files inside each storage directory.
 - CLI now selects backend via config (`storage.backend` / `storage.sqlite_filename`) and reports the active backend in `+status`.
