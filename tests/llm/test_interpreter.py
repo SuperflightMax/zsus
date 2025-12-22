@@ -100,6 +100,7 @@ def test_invalid_json_falls_back_to_unknown(monkeypatch):
     assert result["command"] is None
     assert result["needs_confirmation"] is True
     assert result["questions"]
+    assert result["debug"]["raw_llm_response"] == "not-a-json"
 
 
 def test_disabled_llm_returns_unknown(monkeypatch):
@@ -112,3 +113,18 @@ def test_disabled_llm_returns_unknown(monkeypatch):
     assert result["intent"] == "unknown"
     assert result["command"] is None
     assert result["needs_confirmation"] is True
+
+
+def test_error_in_llm_call_exposed_in_debug(monkeypatch):
+    monkeypatch.setenv("LLM_ENABLED", "1")
+
+    def _raise_llm(self, text: str) -> str:  # noqa: ANN001
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(Interpreter, "_call_llm", _raise_llm, raising=True)
+
+    interpreter = Interpreter(config={})
+    result = interpreter.interpret("будь-який запит")
+
+    assert result["intent"] == "unknown"
+    assert result["debug"]["error"] == "boom"

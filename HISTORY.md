@@ -1,7 +1,7 @@
 # 11
 - Implemented LLM Interpreter that calls OpenAI (`gpt-4.1`) with a dedicated system prompt to map український текст у структурований JSON контракт core, enforcing confirmation rules (consume/unknown/low confidence/missing data).
-- Added system prompt module, LLM documentation (LLM.md), environment-driven configuration (`LLM_ENABLED`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_STT_MODEL`), and OpenAI dependency.
-- Created unit tests covering confident intake, consume confirmation, low-confidence handling, unknown fallback, and disabled LLM behavior.
+- Wired CLI plain-text flow to the interpreter: shows structured intent, optionally asks for confirmation, executes commands when підтверджено/безпечні, and now surfaces interpreter debug output (error + raw LLM response) when interpretation fails/returns unknown; added tests for CLI–LLM interaction.
+- Added system prompt module, LLM documentation (LLM.md), environment-driven configuration (`LLM_ENABLED`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_STT_MODEL`), OpenAI dependency, and interpreter unit tests (intake, consume, low confidence, unknown, disabled, debug).
 
 # 10
 - Implemented a SQLite storage backend that follows the existing StorageBackend contract, using per-storage database files (`storages/<storage_id>/storage.db` by default) to persist state across CLI runs.
