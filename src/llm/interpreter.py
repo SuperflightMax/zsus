@@ -1,10 +1,13 @@
-"""Rule-based interpreter that maps free-form text to core commands."""
+"""LLM-backed interpreter that converts free-form text to core commands."""
 
 from __future__ import annotations
 
-import re
+import json
+import os
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Optional
+
+from openai import OpenAI
 
 
 DEFAULT_UNKNOWN_SUMMARY = "Не зрозумів запит. Спробуйте переформулювати."
@@ -16,25 +19,38 @@ class Interpretation:
     confidence: float
     human_summary_ua: str
     command: Optional[Dict[str, Any]]
+    error: Optional[str] = None
+
+
+class _OpenAIClient:
+    """Thin wrapper over OpenAI chat completions used by the interpreter."""
+
+    def __init__(self, model: str, api_key: str, base_url: Optional[str] = None):
+        self.model = model
+        self.client = OpenAI(api_key=api_key, base_url=base_url or None)
+
+    def complete(self, messages: list[dict[str, str]]) -> str:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=0,
+        )
+        return response.choices[0].message.content or ""
 
 
 class Interpreter:
-    """Lightweight intent interpreter (no external LLM calls)."""
+    """LLM-backed intent interpreter using OpenAI GPT-4.1."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], client: Optional[_OpenAIClient] = None):
         self._config = config
         llm_config = config.get("llm", {})
         self._enabled = bool(llm_config.get("enabled", False))
+        self._model = os.getenv("OPENAI_MODEL") or llm_config.get("model") or "gpt-4.1"
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("OPENAI_BASE_URL") or llm_config.get("base_url")
+        self._client = client if client is not None else (self._build_client(api_key, base_url) if self._enabled else None)
 
     def interpret(self, text: str) -> Dict[str, Any]:
-        """Interpret user text into a structured command payload.
-
-        The interpreter intentionally stays simple and conservative:
-        - No external calls
-        - Only light heuristics and keywords
-        - Defaults to a safe "unknown" with low confidence
-        """
-
         if not self._enabled:
             return self._asdict(
                 Interpretation(
@@ -45,173 +61,106 @@ class Interpreter:
                 )
             )
 
-        cleaned = (text or "").strip()
-        if not cleaned:
+        if not text or not text.strip():
             return self._unknown()
 
-        lower = cleaned.lower()
-
-        # list
-        if self._contains_any(lower, ["список", "все на складе", "все на складі", "list", "весь склад"]):
+        if self._client is None:
             return self._asdict(
                 Interpretation(
-                    intent="list",
-                    confidence=0.9,
-                    human_summary_ua="Показати весь склад.",
-                    command={"command": "list", "payload": {}},
+                    intent="unknown",
+                    confidence=0.0,
+                    human_summary_ua="LLM недоступний: немає ключа або клієнта.",
+                    command=None,
+                    error="LLM client not configured",
                 )
             )
 
-        # find
-        if self._contains_any(lower, ["де", "где", "найди", "знайди", "find", "ищи", "покажи где", "where"]):
-            item = self._extract_item(cleaned, intent="find")
-            if item:
-                return self._asdict(
-                    Interpretation(
-                        intent="find",
-                        confidence=0.88,
-                        human_summary_ua=f"Пошук: {item}.",
-                        command={"command": "find", "payload": {"item_id": item}},
-                    )
-                )
-
-        # move (minimal support)
-        if self._contains_any(lower, ["перенеси", "перемести", "переміст", "переклади", "переведи"]):
-            parsed_move = self._parse_move(cleaned)
-            if parsed_move:
-                item, qty, from_loc, to_loc = parsed_move
-                return self._asdict(
-                    Interpretation(
-                        intent="move",
-                        confidence=0.8,
-                        human_summary_ua=f"Перемістити: {item} ×{qty} з {from_loc or 'склад'} до {to_loc or 'склад'}.",
-                        command={
-                            "command": "move",
-                            "payload": {
-                                "item_id": item,
-                                "qty": qty,
-                                "from": from_loc,
-                                "to": to_loc,
-                            },
-                        },
-                    )
-                )
-
-        # consume
-        if self._contains_any(lower, ["спиши", "списати", "списать", "выдай", "віддай", "відпиши", "расходуй", "списуй"]):
-            item = self._extract_item(cleaned, intent="consume")
-            qty = self._extract_qty(cleaned) or 1
-            if item:
-                return self._asdict(
-                    Interpretation(
-                        intent="consume",
-                        confidence=0.87,
-                        human_summary_ua=f"Списав: {item} ×{qty}.",
-                        command={
-                            "command": "consume",
-                            "payload": {
-                                "item_id": item,
-                                "qty": qty,
-                                "from": None,
-                            },
-                        },
-                    )
-                )
-
-        # intake
-        if self._contains_any(lower, ["додай", "добавь", "добавь", "добавити", "добавь", "добавь", "прийми", "прими", "поклади", "положи", "добав", "принять", "принеси"]):
-            item = self._extract_item(cleaned, intent="intake")
-            qty = self._extract_qty(cleaned) or 1
-            if item:
-                return self._asdict(
-                    Interpretation(
-                        intent="intake",
-                        confidence=0.9,
-                        human_summary_ua=f"Додав: {item} ×{qty}.",
-                        command={
-                            "command": "intake",
-                            "payload": {
-                                "items": [
-                                    {
-                                        "item_id": item,
-                                        "qty": qty,
-                                        "location": None,
-                                    }
-                                ]
-                            },
-                        },
-                    )
-                )
-
-        return self._unknown()
-
-    # helpers
-
-    @staticmethod
-    def _contains_any(text: str, keywords: Iterable[str]) -> bool:
-        return any(keyword in text for keyword in keywords)
-
-    @staticmethod
-    def _extract_qty(text: str) -> Optional[int]:
-        match = re.search(r"(\d+)", text)
-        if not match:
-            return None
         try:
-            return int(match.group(1))
-        except ValueError:
+            raw_text = self._call_model(text.strip())
+            parsed = self._parse_llm_response(raw_text)
+        except Exception as exc:  # broad on purpose to avoid leaking stack traces
+            return self._asdict(
+                Interpretation(
+                    intent="unknown",
+                    confidence=0.0,
+                    human_summary_ua=DEFAULT_UNKNOWN_SUMMARY,
+                    command=None,
+                    error=str(exc),
+                )
+            )
+
+        enriched = self._apply_defaults(parsed)
+        return self._asdict(enriched)
+
+    # internals
+
+    def _build_client(self, api_key: Optional[str], base_url: Optional[str]) -> Optional[_OpenAIClient]:
+        if not api_key:
             return None
+        return _OpenAIClient(model=self._model, api_key=api_key, base_url=base_url)
 
-    def _extract_item(self, text: str, intent: str) -> Optional[str]:
-        tokens = re.findall(r"[\w'’\-]+", text, flags=re.UNICODE)
-        if not tokens:
-            return None
+    def _call_model(self, prompt: str) -> str:
+        system_prompt = (
+            "Ти LLM-інтерпретатор. Перетвори вхідний текст на JSON з полями: intent (intake|move|consume|find|list|unknown), "
+            "confidence (0..1), human_summary_ua (українською), command (або null). intent/command мають відповідати core: "
+            "intake items[{item_id, qty, location|null}], move {item_id, qty, from, to}, consume {item_id, qty, from|null}, "
+            "find {item_id}, list {}. Якщо запит незрозумілий — intent=unknown, command=null, confidence=0. "
+            "Якщо qty не вказана для intake/consume — став qty=1. item_id і human_summary_ua українською. Відповідай ТІЛЬКИ JSON."
+        )
 
-        skip_keywords = {
-            "intake": ["додай", "добавь", "добавити", "прийми", "прими", "поклади", "положи", "принеси"],
-            "consume": ["спиши", "списати", "списать", "выдай", "віддай", "расходуй", "списуй", "відпиши"],
-            "find": ["де", "где", "найди", "знайди", "find", "ищи", "покажи", "where"],
-            "move": ["перенеси", "перемести", "переклади", "переведи"],
-        }.get(intent, [])
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+        return self._client.complete(messages)
 
-        filtered: List[str] = []
-        for token in tokens:
-            lower = token.lower()
-            if lower.isdigit():
-                continue
-            if lower in skip_keywords:
-                continue
-            filtered.append(token)
+    def _parse_llm_response(self, text: str) -> Interpretation:
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            raise ValueError("LLM response is not valid JSON")
 
-        if not filtered:
-            return None
+        intent = payload.get("intent") or "unknown"
+        confidence = float(payload.get("confidence") or 0.0)
+        human_summary = payload.get("human_summary_ua") or DEFAULT_UNKNOWN_SUMMARY
+        command = payload.get("command")
 
-        return " ".join(filtered).strip()
+        return Interpretation(intent=intent, confidence=confidence, human_summary_ua=human_summary, command=command)
 
-    def _parse_move(self, text: str) -> Optional[tuple[str, int, Optional[str], Optional[str]]]:
-        qty = self._extract_qty(text) or 1
-        from_loc = None
-        to_loc = None
+    def _apply_defaults(self, interpretation: Interpretation) -> Interpretation:
+        intent = interpretation.intent
+        command = interpretation.command
 
-        # naive pattern: "з <loc> в <loc>" / "из <loc> в <loc>"
-        match = re.search(r"[ззiи]з?\s+([^\s]+)\s+[вву]\s+([^\s]+)", text, flags=re.IGNORECASE)
-        if match:
-            from_loc = match.group(1)
-            to_loc = match.group(2)
+        if intent in {"intake", "consume"} and command:
+            if intent == "intake":
+                items = command.get("payload", {}).get("items") if isinstance(command, dict) else None
+                if items and isinstance(items, list):
+                    for item in items:
+                        if "qty" not in item or not item.get("qty"):
+                            item["qty"] = 1
+                        if "location" not in item:
+                            item["location"] = None
+            if intent == "consume":
+                payload = command.get("payload") if isinstance(command, dict) else None
+                if isinstance(payload, dict):
+                    if "qty" not in payload or not payload.get("qty"):
+                        payload["qty"] = 1
+                    if "from" not in payload:
+                        payload["from"] = None
 
-        item = self._extract_item(text, intent="move")
-        if not item:
-            return None
-
-        return item, qty, from_loc, to_loc
+        return interpretation
 
     @staticmethod
     def _asdict(result: Interpretation) -> Dict[str, Any]:
-        return {
+        data = {
             "intent": result.intent,
             "confidence": float(result.confidence),
             "human_summary_ua": result.human_summary_ua,
             "command": result.command,
         }
+        if result.error:
+            data["error"] = result.error
+        return data
 
     @staticmethod
     def _unknown() -> Dict[str, Any]:

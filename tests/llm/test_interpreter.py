@@ -1,10 +1,21 @@
+import json
+from typing import Any, Dict
+
 import pytest
 
-from src.llm.interpreter import Interpreter
+from src.llm.interpreter import Interpreter, _OpenAIClient
 
 
 def make_config(enabled: bool = True) -> dict:
-    return {"llm": {"enabled": enabled}}
+    return {"llm": {"enabled": enabled, "model": "gpt-4.1"}}
+
+
+class DummyClient(_OpenAIClient):
+    def __init__(self, payload: Dict[str, Any]):
+        self.payload = payload
+
+    def complete(self, messages: list[dict[str, str]]) -> str:
+        return json.dumps(self.payload)
 
 
 @pytest.mark.parametrize(
@@ -16,7 +27,20 @@ def make_config(enabled: bool = True) -> dict:
     ],
 )
 def test_intake_and_consume_intents(text, expected_intent, expected_item, expected_qty):
-    interpreter = Interpreter(make_config())
+    payload = {
+        "intent": expected_intent,
+        "confidence": 0.9,
+        "human_summary_ua": "ok",
+        "command": {
+            "command": expected_intent,
+            "payload": (
+                {"items": [{"item_id": expected_item, "qty": expected_qty, "location": None}]}
+                if expected_intent == "intake"
+                else {"item_id": expected_item, "qty": expected_qty, "from": None}
+            ),
+        },
+    }
+    interpreter = Interpreter(make_config(), client=DummyClient(payload))
 
     result = interpreter.interpret(text)
 
@@ -33,7 +57,13 @@ def test_intake_and_consume_intents(text, expected_intent, expected_item, expect
 
 
 def test_find_intent_extracts_item():
-    interpreter = Interpreter(make_config())
+    payload = {
+        "intent": "find",
+        "confidence": 0.8,
+        "human_summary_ua": "Пошук: бинт.",
+        "command": {"command": "find", "payload": {"item_id": "бинт"}},
+    }
+    interpreter = Interpreter(make_config(), client=DummyClient(payload))
 
     result = interpreter.interpret("де бинт")
 
@@ -43,7 +73,7 @@ def test_find_intent_extracts_item():
 
 
 def test_gibberish_falls_back_to_unknown():
-    interpreter = Interpreter(make_config())
+    interpreter = Interpreter(make_config(), client=DummyClient({"intent": "unknown", "confidence": 0.0, "command": None}))
 
     result = interpreter.interpret("asdf qwerty")
 

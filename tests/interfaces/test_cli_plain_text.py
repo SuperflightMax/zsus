@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from src.interfaces.cli import main as cli_main
