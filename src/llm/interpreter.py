@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from openai import OpenAI
@@ -100,19 +101,7 @@ class Interpreter:
         return _OpenAIClient(model=self._model, api_key=api_key, base_url=base_url)
 
     def _call_model(self, prompt: str) -> str:
-        system_prompt = (
-            "Ти LLM-інтерпретатор складського бота. Твоє завдання — ПЕРЕКЛАСТИ користувацький текст у структурований JSON-команду core.\n"
-            "Ніколи не додавай адміністраторські підказки чи команди. Відповідь ТІЛЬКИ JSON, без пояснень.\n"
-            "JSON поля: intent (intake|move|consume|find|list|unknown), confidence (0..1), human_summary_ua (українською), command або null.\n"
-            "command формати:\n"
-            "- intake: {\"command\":\"intake\",\"payload\":{\"items\":[{\"item_id\":...,\"qty\":>0,\"location\":<string|null>}]}}\n"
-            "- move:   {\"command\":\"move\",\"payload\":{\"item_id\":...,\"qty\":>0,\"from\":<string|null>,\"to\":<string|null>}}\n"
-            "- consume:{\"command\":\"consume\",\"payload\":{\"item_id\":...,\"qty\":>0,\"from\":<string|null>}}\n"
-            "- find:   {\"command\":\"find\",\"payload\":{\"item_id\":...}}\n"
-            "- list:   {\"command\":\"list\",\"payload\":{}}\n"
-            "Якщо запит незрозумілий — intent=unknown, command=null, confidence=0.\n"
-            "Якщо qty не вказана для intake/consume — став qty=1. item_id і human_summary_ua тільки українською."
-        )
+        system_prompt = _load_system_prompt()
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -176,3 +165,16 @@ class Interpreter:
             "human_summary_ua": DEFAULT_UNKNOWN_SUMMARY,
             "command": None,
         }
+
+
+_SYSTEM_PROMPT_CACHE: Optional[str] = None
+
+
+def _load_system_prompt() -> str:
+    global _SYSTEM_PROMPT_CACHE
+    if _SYSTEM_PROMPT_CACHE is not None:
+        return _SYSTEM_PROMPT_CACHE
+
+    prompt_path = Path(__file__).parent / "prompts" / "system_prompt.txt"
+    _SYSTEM_PROMPT_CACHE = prompt_path.read_text(encoding="utf-8").strip()
+    return _SYSTEM_PROMPT_CACHE

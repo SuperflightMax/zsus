@@ -2,6 +2,7 @@
 - Added an OpenAI GPT-4.1–backed `LLMInterpreter` that converts free-form UA/RU/mixed text into structured core commands with confidence and UA summaries, defaulting to safe unknown responses when uncertain.
 - Wired CLI plain-text flow through the interpreter with SERVICE/USER output separation, confidence gating, and storage-activation guards (USER now sees a generic activation error without admin hints).
 - Added tests for interpreter intents and CLI text handling to lock in the new behaviors and defaults.
+- Moved the interpreter system prompt into a dedicated text file to keep prompt wording maintainable without touching code.
 
 # 10
 - Added SQLite storage backend that mirrors in-memory semantics while persisting state with per-storage database files inside each storage directory.
