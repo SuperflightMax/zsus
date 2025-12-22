@@ -12,7 +12,6 @@ from ...infra import load_config
 from ...infra.storage_registry import StorageRegistry
 from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
-from ...llm.interpreter import Interpreter
 
 
 def configure_logging(level_name: str) -> None:
@@ -31,7 +30,6 @@ def run() -> None:
     configure_logging(config.get("logging", {}).get("level", "INFO"))
     backend_name, backend = _init_backend(config)
     set_default_backend(backend)
-    interpreter = Interpreter(config=config)
 
     prompt_template = _get_prompt_template(config)
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
@@ -82,12 +80,7 @@ def run() -> None:
                         json_lines = []
                         brace_balance = 0
                 else:
-                    _handle_text_input(
-                        user_input,
-                        active_storage_id=active_storage_id,
-                        interpreter=interpreter,
-                        table_max_width=table_max_width,
-                    )
+                    print(user_input)
             else:
                 json_lines.append(user_input)
                 brace_balance = _update_brace_balance(brace_balance, user_input)
@@ -221,43 +214,6 @@ def _handle_admin_command(
 
     print(f"Unknown admin command: +{command}")
     return active_storage_id
-
-
-def _handle_text_input(
-    text: str,
-    active_storage_id: Optional[str],
-    interpreter: Interpreter,
-    table_max_width: int,
-) -> None:
-    """Process plain-text input via LLM interpreter and optionally execute."""
-
-    result = interpreter.interpret(text)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-
-    command = result.get("command")
-    needs_confirmation = bool(result.get("needs_confirmation"))
-
-    if not command:
-        return
-
-    if not active_storage_id:
-        print("No active storage. Use +activatestorage first.")
-        return
-
-    command_with_storage = dict(command)
-    command_with_storage["storage_id"] = active_storage_id
-
-    if needs_confirmation:
-        answer = input("Execute this command? [y/N] ").strip().lower()
-        if answer not in {"y", "yes"}:
-            print("Skipped.")
-            return
-
-    response = handle_command(command_with_storage)
-    print(json.dumps(response, ensure_ascii=False, indent=2))
-
-    if command_with_storage.get("command") == "list" and response.get("status") == "ok":
-        _print_storage_table(response.get("data") or {}, max_width=table_max_width)
 
 
 def _starts_json(text: str) -> bool:
