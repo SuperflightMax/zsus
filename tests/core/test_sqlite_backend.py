@@ -24,7 +24,7 @@ def test_intake_and_persist_across_sessions(tmp_path: Path):
         }
     )
 
-    assert response["status"] == "ok"
+    assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 3}}
 
     # Recreate backend to ensure data persists on disk.
@@ -39,7 +39,8 @@ def test_intake_and_persist_across_sessions(tmp_path: Path):
         }
     )
 
-    assert list_response == {"status": "ok", "data": {"radio": {"null": 3}}}
+    assert list_response.ok is True
+    assert list_response.data == {"radio": {"null": 3}}
 
 
 def test_move_and_consume_cleanup(tmp_path: Path):
@@ -71,7 +72,7 @@ def test_move_and_consume_cleanup(tmp_path: Path):
         }
     )
 
-    assert consume_response["status"] == "ok"
+    assert consume_response.ok is True
     assert engine.backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": 1}}
 
 
@@ -129,5 +130,5 @@ def test_find_nonexistent_item_returns_error(tmp_path: Path):
         }
     )
 
-    assert response["status"] == "error"
+    assert response.ok is False
     assert engine.backend.get_storage_snapshot(storage_id) == before
