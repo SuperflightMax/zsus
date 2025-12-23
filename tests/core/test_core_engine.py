@@ -33,7 +33,8 @@ def test_intake_single_item_new(engine: CoreEngine, backend: InMemoryStorageBack
         }
     )
 
-    assert response == {"status": "ok", "data": {}}
+    assert response.ok is True
+    assert response.data == {}
     assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 3}}
 
 
@@ -51,7 +52,7 @@ def test_intake_multiple_items(engine: CoreEngine, backend: InMemoryStorageBacke
         }
     )
 
-    assert response["status"] == "ok"
+    assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {
         "radio": {None: 3},
         "battery": {"box": 5},
@@ -67,8 +68,8 @@ def test_intake_same_item_twice(engine: CoreEngine, backend: InMemoryStorageBack
     first = engine.handle_command(command)
     second = engine.handle_command(command)
 
-    assert first["status"] == "ok"
-    assert second["status"] == "ok"
+    assert first.ok is True
+    assert second.ok is True
     assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 4}}
 
 
@@ -83,7 +84,7 @@ def test_intake_invalid_qty(engine: CoreEngine, backend: InMemoryStorageBackend,
         }
     )
 
-    assert response["status"] == "error"
+    assert response.ok is False
     assert backend.get_storage_snapshot(storage_id) == before
 
 
@@ -104,7 +105,7 @@ def test_move_between_locations(engine: CoreEngine, backend: InMemoryStorageBack
         }
     )
 
-    assert response["status"] == "ok"
+    assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {
         "radio": {None: 3, "box_1": 2},
     }
@@ -128,7 +129,7 @@ def test_move_not_enough_qty(engine: CoreEngine, backend: InMemoryStorageBackend
         }
     )
 
-    assert response["status"] == "error"
+    assert response.ok is False
     assert backend.get_storage_snapshot(storage_id) == before
 
 
@@ -143,7 +144,7 @@ def test_move_nonexistent_item(engine: CoreEngine, backend: InMemoryStorageBacke
         }
     )
 
-    assert response["status"] == "error"
+    assert response.ok is False
     assert backend.get_storage_snapshot(storage_id) == before
 
 
@@ -164,7 +165,7 @@ def test_consume_from_location(engine: CoreEngine, backend: InMemoryStorageBacke
         }
     )
 
-    assert response["status"] == "ok"
+    assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": 3}}
 
 
@@ -185,7 +186,7 @@ def test_consume_all_qty_removes_location(engine: CoreEngine, backend: InMemoryS
         }
     )
 
-    assert response["status"] == "ok"
+    assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {}
 
 
@@ -207,7 +208,7 @@ def test_consume_not_enough_qty(engine: CoreEngine, backend: InMemoryStorageBack
         }
     )
 
-    assert response["status"] == "error"
+    assert response.ok is False
     assert backend.get_storage_snapshot(storage_id) == before
 
 
@@ -228,10 +229,8 @@ def test_find_single_location(engine: CoreEngine, backend: InMemoryStorageBacken
         }
     )
 
-    assert response == {
-        "status": "ok",
-        "data": {"item_id": "radio", "total_qty": 4, "locations": {"null": 4}},
-    }
+    assert response.ok is True
+    assert response.data == {"item_id": "radio", "total_qty": 4, "locations": {"null": 4}}
 
 
 def test_find_multiple_locations(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -258,8 +257,8 @@ def test_find_multiple_locations(engine: CoreEngine, backend: InMemoryStorageBac
         }
     )
 
-    assert response["status"] == "ok"
-    assert response["data"] == {
+    assert response.ok is True
+    assert response.data == {
         "item_id": "radio",
         "total_qty": 4,
         "locations": {"null": 3, "shelf": 1},
@@ -275,7 +274,7 @@ def test_find_nonexistent_item(engine: CoreEngine, backend: InMemoryStorageBacke
         }
     )
 
-    assert response["status"] == "error"
+    assert response.ok is False
 
 
 def test_list_empty_storage(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -287,7 +286,8 @@ def test_list_empty_storage(engine: CoreEngine, backend: InMemoryStorageBackend,
         }
     )
 
-    assert response == {"status": "ok", "data": {}}
+    assert response.ok is True
+    assert response.data == {}
 
 
 def test_list_with_multiple_items(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -319,8 +319,8 @@ def test_list_with_multiple_items(engine: CoreEngine, backend: InMemoryStorageBa
         }
     )
 
-    assert response["status"] == "ok"
-    assert response["data"] == {
+    assert response.ok is True
+    assert response.data == {
         "radio": {"null": 1, "box": 1},
         "battery": {"box": 5},
     }
@@ -344,7 +344,8 @@ def test_multiple_storages_are_isolated(engine: CoreEngine, backend: InMemorySto
         }
     )
 
-    assert response_other == {"status": "ok", "data": {}}
+    assert response_other.ok is True
+    assert response_other.data == {}
     assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 2}}
 
 
@@ -359,6 +360,47 @@ def test_unknown_command_returns_error(engine: CoreEngine, backend: InMemoryStor
         }
     )
 
-    assert response["status"] == "error"
-    assert backend.get_storage_snapshot(storage_id) == before
+    assert response.ok is False
 
+
+def test_defaults_applied_by_policy(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    response_intake = engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio"}]},
+        }
+    )
+
+    assert response_intake.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 1}}
+
+    response_consume = engine.handle_command(
+        {
+            "command": "consume",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio"},
+        }
+    )
+
+    assert response_consume.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {}
+
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio"}]},
+        }
+    )
+
+    response_move = engine.handle_command(
+        {
+            "command": "move",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio", "from": None, "to": "box"},
+        }
+    )
+
+    assert response_move.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {"box": 1}}
