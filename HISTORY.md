@@ -2,6 +2,10 @@
 - Implemented a SQLite storage backend that follows the existing StorageBackend contract, using per-storage database files (`storages/<storage_id>/storage.db` by default) to persist state across CLI runs.
 - CLI now loads the backend from configuration (`storage.backend`, `storage.sqlite_filename`), reports it via `+status`, and keeps in-memory as the default for tests and quick runs.
 
+# 11
+- Added short admin aliases `+ls` (list storages), `+li` (list items of active storage), and `+as` (activate storage) to reduce typing in the CLI.
+- Added a Windows helper script `cliw.bat` that creates/activates `.venv` and runs `python -m src.interfaces.cli.main` from the repository root.
+
 # 9
 - Added admin CLI command `+listitems` that prints active storage contents as a readable table, with `(unplaced)` shown for `null` locations and truncation for long values based on `cli.table_max_width` (default 24).
 - Documented the core `list` command contract and updated CLI documentation to cover the new admin output and truncation behavior.

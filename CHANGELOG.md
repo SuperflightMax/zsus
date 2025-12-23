@@ -2,6 +2,10 @@
 - Added SQLite storage backend that mirrors in-memory semantics while persisting state with per-storage database files inside each storage directory.
 - CLI now selects backend via config (`storage.backend` / `storage.sqlite_filename`) and reports the active backend in `+status`.
 
+# 11
+- Added admin command aliases (`+ls`, `+li`, `+as`) for listing storages, listing items, and activating a storage.
+- Added `cliw.bat` to bootstrap a virtual environment and run the CLI on Windows.
+
 # 9
 - Added admin CLI command `+listitems` to print the active storage contents as a readable table with configurable truncation (`cli.table_max_width`, default 24).
 - Documented the core `list` command and updated CLI docs to cover the new admin command.

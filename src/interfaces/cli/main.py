@@ -117,7 +117,13 @@ def _handle_admin_command(
         print("Unknown admin command.")
         return active_storage_id
 
-    command = tokens[0].lower()
+    command_aliases = {
+        "ls": "liststorages",
+        "li": "listitems",
+        "as": "activatestorage",
+    }
+
+    command = command_aliases.get(tokens[0].lower(), tokens[0].lower())
     args = tokens[1:]
 
     if command == "createstorage":
