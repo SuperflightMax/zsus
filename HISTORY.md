@@ -1,3 +1,5 @@
+# last change always at the top here (under this line)
+
 # 11
 - Added short admin aliases `+ls` (list storages), `+li` (list items of active storage), and `+as` (activate storage) to reduce typing in the CLI.
 - Added a Windows helper script `cliw.bat` that creates/activates `.venv` and runs `python -m src.interfaces.cli.main` from the repository root.
