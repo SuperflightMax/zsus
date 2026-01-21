@@ -13,6 +13,8 @@ from ...infra.storage_registry import StorageRegistry
 from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
 from ...core.result import OperationResult
+from ...llm import InteractionContext, LLMAdapter2Pass, OpenAIClient, SUPPORTED_INTENTS
+from ...llm.client import LLMUnavailableError
 
 
 def configure_logging(level_name: str) -> None:
@@ -26,11 +28,27 @@ def _init_backend(config: Dict[str, Any]) -> Tuple[str, Any]:
     return backend_name, backend
 
 
+def _init_llm_adapter(config: Dict[str, Any]) -> LLMAdapter2Pass:
+    llm_config = config.get("llm", {})
+    client = None
+    if llm_config.get("enabled", False):
+        try:
+            client = OpenAIClient()
+        except LLMUnavailableError as exc:
+            logging.warning("LLM unavailable: %s", exc)
+    else:
+        logging.info("LLM disabled in configuration.")
+
+    threshold = config.get("core", {}).get("confidence_threshold", 0.7)
+    return LLMAdapter2Pass(llm_client=client, confidence_threshold=threshold)
+
+
 def run() -> None:
     config = load_config()
     configure_logging(config.get("logging", {}).get("level", "INFO"))
     backend_name, backend = _init_backend(config)
     set_default_backend(backend)
+    llm_adapter = _init_llm_adapter(config)
 
     prompt_template = _get_prompt_template(config)
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
@@ -81,12 +99,26 @@ def run() -> None:
                         json_lines = []
                         brace_balance = 0
                 else:
-                    _print_operation_result(
-                        OperationResult.success(
-                            user_text=user_input,
-                            system_log=["Echoed user input."],
+                    if active_storage_id is None:
+                        _print_operation_result(
+                            OperationResult.failure(
+                                user_text="Немає активного складу. Використайте +activatestorage.",
+                                system_log=["LLM input rejected: no active storage."],
+                            )
                         )
+                        continue
+                    interaction_context = InteractionContext(
+                        interaction_id=str(uuid4()),
+                        language_policy={"input": "any", "output": "uk"},
+                        turns=[{"role": "user", "content": user_input}],
                     )
+                    result = llm_adapter.run(
+                        interaction_context=interaction_context,
+                        allowed_intents=sorted(SUPPORTED_INTENTS),
+                        mvp_mode=True,
+                        storage_id=active_storage_id,
+                    )
+                    _print_operation_result(result)
             else:
                 json_lines.append(user_input)
                 brace_balance = _update_brace_balance(brace_balance, user_input)

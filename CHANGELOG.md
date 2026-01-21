@@ -1,5 +1,13 @@
 # last change always at the top here (under this line)
 
+# 14
+- Forced OpenAI client to use the default API base URL, ignoring OPENAI_BASE_URL from the environment.
+
+# 13
+- Added a 2-pass LLM adapter wired into CLI plain-text input, with OpenAI API client support, structured validation/execution glue, and detailed system logging for interpretation and replies.
+- Implemented rejection reasons and defaults handling in the LLM pipeline, plus mock-based tests for invalid JSON, low confidence, missing required fields, and LLM unavailability.
+- Updated CLI documentation to reflect the new LLM-driven plain-text flow.
+
 # 12
 - Unified command responses under `OperationResult` with explicit `ok`, `user_text`, `system_log`, and `data`, and updated CLI to print separated SYSTEM/USER blocks with structured logs.
 - Centralized defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and applied them via a policy layer before the core engine, plus standardized user-facing error texts without raises/prints.

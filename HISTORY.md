@@ -1,5 +1,14 @@
 # last change always at the top here (under this line)
 
+# 14
+- Updated the OpenAI client to always use the default API base URL, ignoring the OPENAI_BASE_URL environment setting.
+
+# 13
+- Added an OpenAI-backed LLM client and 2-pass adapter (PASS1 interpret → policy/execute → PASS2 reply) with strict system logging of raw outputs, parsed drafts, validation, and execution summaries.
+- Wired CLI plain-text input into the LLM pipeline with Ukrainian-only user output and structured SYSTEM summaries for status, reason, confidence, intent, and command details.
+- Added mock-driven tests to verify rejection handling for invalid JSON, low confidence, missing required fields, and LLM unavailability while keeping core state unchanged on rejections.
+- Updated CLI documentation to describe the new LLM-driven plain-text flow.
+
 # 12
 - Introduced `OperationResult` as the unified response object for core and interfaces, carrying `ok`, `user_text`, `system_log`, and `data`, and refactored the CLI to render distinct `-------- SYSTEM:` / `-------- USER:` blocks.
 - Centralized command defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and routed all incoming commands through a policy layer that applies defaults, validates required fields, and returns structured failures without raising for user scenarios.
