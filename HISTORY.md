@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 15
+- Added qty defaulting to 1 when missing in DraftCommand validation for user-text intake/move/consume.
+
 # 14
 - Updated OpenAI client configuration to read model override from .env while keeping API URL from config only.
 

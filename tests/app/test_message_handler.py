@@ -100,6 +100,27 @@ def test_intake_without_location_allows_null_location(base_config):
     assert executable["payload"]["items"][0]["location"] is None
 
 
+def test_intake_defaults_qty_to_one(base_config):
+    core = RecordingCore(OperationResult.success())
+    result = handle_user_message(
+        "додай аптечку",
+        active_storage_id="s1",
+        config=base_config,
+        core_handler=core,
+        interpreter=FakeInterpreter(
+            {
+                "confidence": 0.9,
+                "draft_command": {"intent": "intake", "item_id": "аптечка"},
+            }
+        ),
+        responder=FakeResponder("Готово."),
+    )
+
+    assert result.ok is True
+    executable = result.data["executable_command"]
+    assert executable["payload"]["items"][0]["qty"] == 1
+
+
 def test_list_inventory_executes_and_returns_user_text(base_config):
     core = RecordingCore(OperationResult.success(data={"аптечка": {"null": 2}}))
     result = handle_user_message(

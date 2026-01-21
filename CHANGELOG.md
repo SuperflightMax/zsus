@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 15
+- Defaulted missing qty in DraftCommand validation to 1 for intake/move/consume in the user-text pipeline.
+
 # 14
 - Switched OpenAI client to honor .env model override (OPENAI_MODEL) and keep API URL from config only.
 

@@ -176,6 +176,8 @@ def _validate_draft(draft: Dict[str, Any], confidence: Any, config: Dict[str, An
     if intent == "intake":
         item_id = draft.get("item_id")
         qty = draft.get("qty")
+        if qty is None:
+            qty = 1
         location = draft.get("location") if "location" in draft else None
         if not isinstance(item_id, str) or not item_id:
             return ValidationResult(ok=False, reason="missing_item_id", executable=None)
@@ -193,6 +195,8 @@ def _validate_draft(draft: Dict[str, Any], confidence: Any, config: Dict[str, An
     if intent in {"move", "consume"}:
         item_id = draft.get("item_id")
         qty = draft.get("qty")
+        if qty is None:
+            qty = 1
         if not isinstance(item_id, str) or not item_id:
             return ValidationResult(ok=False, reason="missing_item_id", executable=None)
         if not isinstance(qty, int) or qty <= 0:
