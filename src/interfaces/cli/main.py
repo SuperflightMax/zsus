@@ -14,7 +14,7 @@ from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
 from ...core.result import OperationResult
 from ...app.message_handler import handle_user_message
-from .routing import classify_input, starts_json
+from .routing import classify_input, starts_json, truncate_data
 
 
 def configure_logging(level_name: str) -> None:
@@ -38,6 +38,7 @@ def run() -> None:
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
     exit_commands = config.get("cli", {}).get("exit_commands", ["exit"])
     table_max_width = config.get("cli", {}).get("table_max_width", 24)
+    system_data_max_chars = config.get("cli", {}).get("system_data_max_chars", 50)
     registry = StorageRegistry(config)
     active_storage_id: Optional[str] = None
 
@@ -73,14 +74,17 @@ def run() -> None:
 
                 if route == "json":
                     if active_storage_id is None:
-                        _print_operation_result(OperationResult.failure(user_text="No active storage. Use +activatestorage first."))
+                        _print_operation_result(
+                            OperationResult.failure(user_text="No active storage. Use +activatestorage first."),
+                            data_max_chars=system_data_max_chars,
+                        )
                         continue
 
                     collecting_json = True
                     json_lines = [user_input]
                     brace_balance = _update_brace_balance(brace_balance, user_input)
                     if _json_complete(brace_balance, user_input):
-                        _process_json_block("\n".join(json_lines), active_storage_id)
+                        _process_json_block("\n".join(json_lines), active_storage_id, data_max_chars=system_data_max_chars)
                         collecting_json = False
                         json_lines = []
                         brace_balance = 0
@@ -91,14 +95,15 @@ def run() -> None:
                             active_storage_id=active_storage_id,
                             config=config,
                             core_handler=handle_command,
-                        )
+                        ),
+                        data_max_chars=system_data_max_chars,
                     )
             else:
                 json_lines.append(user_input)
                 brace_balance = _update_brace_balance(brace_balance, user_input)
 
                 if _json_complete(brace_balance, user_input):
-                    _process_json_block("\n".join(json_lines), active_storage_id)
+                    _process_json_block("\n".join(json_lines), active_storage_id, data_max_chars=system_data_max_chars)
                     collecting_json = False
                     json_lines = []
                     brace_balance = 0
@@ -255,22 +260,28 @@ def _json_complete(brace_balance: int, latest_line: str) -> bool:
     return brace_balance <= 0 or latest_line.strip() == ""
 
 
-def _process_json_block(text: str, active_storage_id: str) -> None:
+def _process_json_block(text: str, active_storage_id: str, *, data_max_chars: int) -> None:
     """Parse and dispatch a collected JSON block."""
 
     if not active_storage_id:
-        _print_operation_result(OperationResult.failure(user_text="No active storage. Use +activatestorage first."))
+        _print_operation_result(
+            OperationResult.failure(user_text="No active storage. Use +activatestorage first."),
+            data_max_chars=data_max_chars,
+        )
         return
 
     parsed = _try_parse_json(text)
     if parsed is None:
-        _print_operation_result(OperationResult.failure(user_text="Не удалось прочитать JSON. Попробуйте ещё раз."))
+        _print_operation_result(
+            OperationResult.failure(user_text="Не удалось прочитать JSON. Попробуйте ещё раз."),
+            data_max_chars=data_max_chars,
+        )
         return
 
     parsed_with_storage = dict(parsed)
     parsed_with_storage["storage_id"] = active_storage_id
     response = handle_command(parsed_with_storage)
-    _print_operation_result(response)
+    _print_operation_result(response, data_max_chars=data_max_chars)
 
 
 def _try_parse_json(text: str) -> Dict[str, Any] | None:
@@ -443,13 +454,14 @@ def _render_storage_table(snapshot: Dict[str, Dict[str, int]], max_width: int) -
     return lines
 
 
-def _print_operation_result(result: OperationResult) -> None:
+def _print_operation_result(result: OperationResult, *, data_max_chars: int = 50) -> None:
     system_lines = list(result.system_log)
     if result.data is not None:
         try:
-            system_lines.append(f"data: {json.dumps(result.data, ensure_ascii=False)}")
+            data_text = json.dumps(result.data, ensure_ascii=False)
         except TypeError:
-            system_lines.append(f"data: {result.data}")
+            data_text = str(result.data)
+        system_lines.append(f"data: {truncate_data(data_text, data_max_chars)}")
     system_block = "\n".join(system_lines) if system_lines else "(empty)"
     user_block = result.user_text or ""
     print("-------- SYSTEM:")
@@ -462,6 +474,8 @@ def _truncate_text(value: str, max_width: int) -> str:
     if max_width < 4:
         return value[:max_width]
     return value if len(value) <= max_width else value[: max_width - 3] + "..."
+
+
 
 
 if __name__ == "__main__":

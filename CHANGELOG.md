@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 16
+- Added CLI config `system_data_max_chars` to truncate SYSTEM data output (0 disables truncation).
+
 # 15
 - Defaulted missing qty in DraftCommand validation to 1 for intake/move/consume in the user-text pipeline.
 

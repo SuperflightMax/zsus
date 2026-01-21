@@ -14,3 +14,11 @@ def classify_input(text: str) -> str:
     if starts_json(text):
         return "json"
     return "user"
+
+
+def truncate_data(value: str, max_chars: int) -> str:
+    if max_chars == 0:
+        return value
+    if max_chars < 0:
+        return ""
+    return value if len(value) <= max_chars else value[:max_chars] + "..."

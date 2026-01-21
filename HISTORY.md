@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 16
+- Added CLI config to cap SYSTEM data output length with an option to show full data when set to 0.
+
 # 15
 - Added qty defaulting to 1 when missing in DraftCommand validation for user-text intake/move/consume.
 
