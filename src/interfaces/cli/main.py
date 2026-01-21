@@ -13,6 +13,8 @@ from ...infra.storage_registry import StorageRegistry
 from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
 from ...core.result import OperationResult
+from ...app.message_handler import handle_user_message
+from .routing import classify_input, starts_json
 
 
 def configure_logging(level_name: str) -> None:
@@ -57,7 +59,9 @@ def run() -> None:
 
                 logging.info("Received input: %s", user_input)
 
-                if user_input.startswith("+"):
+                route = classify_input(user_input)
+
+                if route == "admin":
                     active_storage_id = _handle_admin_command(
                         user_input,
                         registry=registry,
@@ -67,7 +71,7 @@ def run() -> None:
                     )
                     continue
 
-                if _starts_json(user_input):
+                if route == "json":
                     if active_storage_id is None:
                         _print_operation_result(OperationResult.failure(user_text="No active storage. Use +activatestorage first."))
                         continue
@@ -82,9 +86,11 @@ def run() -> None:
                         brace_balance = 0
                 else:
                     _print_operation_result(
-                        OperationResult.success(
-                            user_text=user_input,
-                            system_log=["Echoed user input."],
+                        handle_user_message(
+                            user_input,
+                            active_storage_id=active_storage_id,
+                            config=config,
+                            core_handler=handle_command,
                         )
                     )
             else:
@@ -234,8 +240,8 @@ def _handle_admin_command(
 
 
 def _starts_json(text: str) -> bool:
-    """Return True if the input should be treated as JSON."""
-    return text.strip().startswith("{")
+    """Backward-compatible wrapper for input routing tests."""
+    return starts_json(text)
 
 
 def _json_complete(brace_balance: int, latest_line: str) -> bool:

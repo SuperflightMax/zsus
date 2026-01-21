@@ -1,5 +1,13 @@
 # last change always at the top here (under this line)
 
+# 14
+- Switched OpenAI client to honor .env model/base URL overrides (OPENAI_MODEL, OPENAI_BASE_URL) for LLM calls.
+
+# 13
+- Added LLM end-to-end pipeline for plain text CLI input, including prompt loading, OpenAI client integration (stdlib HTTP), interpreter/gate/responder flow, and inventory list intent support.
+- Enforced single active storage for user-text requests, added SYSTEM trace details, and kept admin/JSON routing unchanged.
+- Added tests for prompt loading, routing classification, and user-text handling (low confidence gating, intake without location, list inventory, active storage enforcement).
+
 # 12
 - Unified command responses under `OperationResult` with explicit `ok`, `user_text`, `system_log`, and `data`, and updated CLI to print separated SYSTEM/USER blocks with structured logs.
 - Centralized defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and applied them via a policy layer before the core engine, plus standardized user-facing error texts without raises/prints.

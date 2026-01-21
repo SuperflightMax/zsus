@@ -1,5 +1,13 @@
 # last change always at the top here (under this line)
 
+# 14
+- Updated OpenAI client configuration to read model and base URL from .env overrides, matching env.example variables.
+
+# 13
+- Implemented end-to-end LLM pipeline for plain text CLI input: interpret DraftCommand, validate, execute core, and generate Ukrainian user reply with full SYSTEM trace logging.
+- Added OpenAI stdlib HTTP client with prompt loading from external files, plus a message handler enforcing single active storage for user-text requests.
+- Added inventory listing intent, intake without location support, and tests covering routing, prompt loader, gating, and user-text flow expectations.
+
 # 12
 - Introduced `OperationResult` as the unified response object for core and interfaces, carrying `ok`, `user_text`, `system_log`, and `data`, and refactored the CLI to render distinct `-------- SYSTEM:` / `-------- USER:` blocks.
 - Centralized command defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and routed all incoming commands through a policy layer that applies defaults, validates required fields, and returns structured failures without raising for user scenarios.

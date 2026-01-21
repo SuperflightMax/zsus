@@ -21,6 +21,14 @@ logging:
   level: "INFO"
 llm:
   enabled: true
+  api_url: "https://api.openai.com/v1/chat/completions"
+  model: "gpt-4o-mini"
+  temperature: 0
+  max_tokens: 300
+  timeout_s: 20
+  retry:
+    max_retries: 1
+    backoff_s: 1
 media:
   store_images: true
   store_audio: true
