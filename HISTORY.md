@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 15
+- Escaped literal braces in the operator user prompt template to avoid format-time KeyError when rendering LLM prompts.
+
 # 14
 - Implemented OpenAI-backed LLM operator pipeline for CLI: builds a snapshot via core list, formats operator prompts, calls OpenAI, strictly parses/validates JSON, and returns assistant text plus command list or clarification questions.
 - Added minimal OpenAI client with timeout and single retry on 429/5xx, plus explicit SYSTEM logging of model usage and key presence without leaking the key.

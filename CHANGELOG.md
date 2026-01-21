@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 15
+- Escaped literal braces in operator prompt template to prevent Python format errors during LLM prompt rendering.
+
 # 14
 - Added OpenAI-powered LLM operator pipeline with strict JSON parsing, snapshot context, command execution tracing, and action journal logging for CLI debug runs.
 - Added operator prompts and CLI routing updates so natural language goes through the LLM while admin commands and JSON passthrough remain unchanged.
