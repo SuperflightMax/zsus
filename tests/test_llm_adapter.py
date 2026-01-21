@@ -9,15 +9,24 @@ from src.llm.client import LLMClient, LLMUnavailableError
 class StaticLLMClient(LLMClient):
     def __init__(self, responses):
         self._responses = list(responses)
+        self._model = "test-model"
 
-    def generate(self, system_prompt: str, user_payload: str) -> str:
+    @property
+    def model(self):
+        return self._model
+
+    def generate(self, system_prompt: str, user_payload: str, response_format=None) -> str:
         if not self._responses:
             raise AssertionError("No more responses configured")
         return self._responses.pop(0)
 
 
 class UnavailableLLMClient(LLMClient):
-    def generate(self, system_prompt: str, user_payload: str) -> str:
+    @property
+    def model(self):
+        return "test-model"
+
+    def generate(self, system_prompt: str, user_payload: str, response_format=None) -> str:
         raise LLMUnavailableError("LLM down")
 
 
@@ -62,7 +71,10 @@ def test_low_confidence_rejected_and_core_unchanged():
     engine = CoreEngine(backend=backend)
     before = backend.get_storage_snapshot("test")
 
-    pass1 = json.dumps({"intent": "add", "item": "кабель", "confidence": 0.1}, ensure_ascii=False)
+    pass1 = json.dumps(
+        {"draft_command": {"intent": "add", "item": "кабель"}, "confidence": 0.1},
+        ensure_ascii=False,
+    )
     client = StaticLLMClient([
         pass1,
         "Запит незрозумілий.",

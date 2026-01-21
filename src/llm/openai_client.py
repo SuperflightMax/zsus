@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib import error as url_error
 from urllib import request
 
@@ -23,7 +23,16 @@ class OpenAIClient(LLMClient):
         if not self._api_key or not self._model:
             raise LLMUnavailableError("Missing OpenAI API key or model.")
 
-    def generate(self, system_prompt: str, user_payload: str) -> str:
+    @property
+    def model(self) -> str:
+        return self._model
+
+    def generate(
+        self,
+        system_prompt: str,
+        user_payload: str,
+        response_format: Optional[dict] = None,
+    ) -> str:
         payload = {
             "model": self._model,
             "temperature": self._temperature,
@@ -32,6 +41,8 @@ class OpenAIClient(LLMClient):
                 {"role": "user", "content": user_payload},
             ],
         }
+        if response_format:
+            payload["response_format"] = response_format
         body = json.dumps(payload).encode("utf-8")
         url = "https://api.openai.com/v1/chat/completions"
         request_obj = request.Request(

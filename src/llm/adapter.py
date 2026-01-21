@@ -77,6 +77,9 @@ class LLMAdapter2Pass:
         system_log: List[str] = []
         system_log.append(f"interaction_id: {interaction_context.interaction_id}")
         system_log.append(f"turns: {json.dumps(interaction_context.turns, ensure_ascii=False)}")
+        system_log.append("pass1_prompt=system_prompt_base.txt + system_prompt_pass1.txt")
+        system_log.append("response_format_pass1=json_object")
+        system_log.append(f"model={_client_model(self._llm_client) or 'unknown'}")
 
         try:
             draft, confidence, raw_pass1 = self._pass1(interaction_context, allowed_intents, mvp_mode)
@@ -127,7 +130,11 @@ class LLMAdapter2Pass:
             "allowed_intents": allowed_intents,
             "mvp_mode": mvp_mode,
         }
-        raw = self._call_llm(self._base_prompt + self._pass1_prompt, payload)
+        raw = self._call_llm(
+            _compose_prompt(self._base_prompt, self._pass1_prompt),
+            payload,
+            response_format={"type": "json_object"},
+        )
         draft, confidence = _parse_pass1_output(raw)
         return draft, confidence, raw
 
@@ -146,14 +153,23 @@ class LLMAdapter2Pass:
             "validation": asdict(validation),
             "execution_result": asdict(execution_summary) if execution_summary else None,
         }
-        raw = self._call_llm(self._base_prompt + self._pass2_prompt, payload)
+        raw = self._call_llm(_compose_prompt(self._base_prompt, self._pass2_prompt), payload)
         return raw.strip() or "Сервіс тимчасово недоступний."
 
-    def _call_llm(self, system_prompt: str, payload: Dict[str, Any]) -> str:
+    def _call_llm(
+        self,
+        system_prompt: str,
+        payload: Dict[str, Any],
+        response_format: Optional[dict] = None,
+    ) -> str:
         if not self._llm_client:
             raise LLMUnavailableError("LLM client not configured.")
         try:
-            return self._llm_client.generate(system_prompt, json.dumps(payload, ensure_ascii=False))
+            return self._llm_client.generate(
+                system_prompt,
+                json.dumps(payload, ensure_ascii=False),
+                response_format=response_format,
+            )
         except LLMUnavailableError:
             raise
         except Exception as exc:  # noqa: BLE001
@@ -313,18 +329,22 @@ def _parse_pass1_output(raw: str) -> Tuple[DraftCommand, float]:
     if not isinstance(parsed, dict):
         return DraftCommand(intent=None), 0.0
 
-    intent = parsed.get("intent") if isinstance(parsed.get("intent"), str) else None
+    draft_payload = parsed
+    if isinstance(parsed.get("draft_command"), dict):
+        draft_payload = parsed.get("draft_command")
+
+    intent = draft_payload.get("intent") if isinstance(draft_payload.get("intent"), str) else None
     confidence = parsed.get("confidence")
     confidence_value = confidence if isinstance(confidence, (int, float)) else 0.0
 
     return (
         DraftCommand(
             intent=intent,
-            item=_string_or_none(parsed.get("item")),
-            qty=_int_or_none(parsed.get("qty")),
-            location=_string_or_none(parsed.get("location")),
-            from_location=_string_or_none(parsed.get("from_location")),
-            to_location=_string_or_none(parsed.get("to_location")),
+            item=_string_or_none(draft_payload.get("item")),
+            qty=_int_or_none(draft_payload.get("qty")),
+            location=_string_or_none(draft_payload.get("location")),
+            from_location=_string_or_none(draft_payload.get("from_location")),
+            to_location=_string_or_none(draft_payload.get("to_location")),
         ),
         float(confidence_value),
     )
@@ -343,6 +363,18 @@ def _load_prompt(filename: str) -> str:
     if not path.exists():
         return ""
     return path.read_text(encoding="utf-8")
+
+
+def _compose_prompt(base_prompt: str, pass_prompt: str) -> str:
+    if base_prompt and pass_prompt:
+        return f"{base_prompt.rstrip()}\n\n{pass_prompt.lstrip()}"
+    return base_prompt or pass_prompt
+
+
+def _client_model(client: Optional[LLMClient]) -> Optional[str]:
+    if not client:
+        return None
+    return getattr(client, "model", None)
 
 
 def _llm_unavailable_result(system_log: List[str], message: str) -> OperationResult:

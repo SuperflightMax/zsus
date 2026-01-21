@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 15
+- Enforced JSON-mode PASS1 requests and updated parsing to support nested draft_command output with legacy fallback.
+- Added base/pass prompt separators and expanded system logging with prompt, response format, and model info for LLM calls.
+
 # 14
 - Forced OpenAI client to use the default API base URL, ignoring OPENAI_BASE_URL from the environment.
 
