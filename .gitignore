@@ -9,5 +9,7 @@ storages/
 
 # logs
 *.log
+!logs/
+!logs/actions.log
 .vscode/extensions.json
 notes.txt

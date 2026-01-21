@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 14
+- Added OpenAI-powered LLM operator pipeline with strict JSON parsing, snapshot context, command execution tracing, and action journal logging for CLI debug runs.
+- Added operator prompts and CLI routing updates so natural language goes through the LLM while admin commands and JSON passthrough remain unchanged.
+- Updated docs (README, CLI, MVP, ROADMAP) to reflect the new LLM dialog behavior and quick-start instructions.
+
 # 13
 - Added `DEFAULT_STORAGE` support for CLI startup to auto-activate an existing storage from `.env` and documented the behavior.
 - Removed the LLM enable/disable switch so the interpreter always runs, and trimmed related config/env toggles.

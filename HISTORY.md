@@ -1,5 +1,12 @@
 # last change always at the top here (under this line)
 
+# 14
+- Implemented OpenAI-backed LLM operator pipeline for CLI: builds a snapshot via core list, formats operator prompts, calls OpenAI, strictly parses/validates JSON, and returns assistant text plus command list or clarification questions.
+- Added minimal OpenAI client with timeout and single retry on 429/5xx, plus explicit SYSTEM logging of model usage and key presence without leaking the key.
+- Integrated LLM flow into CLI for non-admin, non-JSON input, emitting full SYSTEM traces (snapshot, raw/parsed LLM JSON, commands, core results) and USER Ukrainian responses.
+- Added append-only action journal at `logs/actions.log` with one JSON line per executed command for later audits.
+- Added operator prompts and updated README/CLI/MVP/ROADMAP docs to align with dialog-capable LLM usage and quick-start instructions.
+
 # 13
 - CLI now reads `DEFAULT_STORAGE` from `.env` on startup, activating the storage if it exists and logging a warning if it does not.
 - Removed the LLM enable/disable flag so the interpreter always responds, and cleaned up the default config/env templates accordingly.

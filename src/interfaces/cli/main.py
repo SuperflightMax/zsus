@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
@@ -14,6 +15,7 @@ from ...infra.storage_registry import StorageRegistry
 from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
 from ...core.result import OperationResult
+from ...llm.llm_operator import LLMOperator
 
 
 def configure_logging(level_name: str) -> None:
@@ -39,6 +41,7 @@ def run() -> None:
     table_max_width = config.get("cli", {}).get("table_max_width", 24)
     registry = StorageRegistry(config)
     active_storage_id: Optional[str] = None
+    llm_operator = LLMOperator()
     default_storage_id = os.getenv("DEFAULT_STORAGE")
     if default_storage_id:
         if registry.storage_exists(default_storage_id):
@@ -89,12 +92,12 @@ def run() -> None:
                         json_lines = []
                         brace_balance = 0
                 else:
-                    _print_operation_result(
-                        OperationResult.success(
-                            user_text=user_input,
-                            system_log=["Echoed user input."],
-                        )
+                    result = _handle_llm_input(
+                        user_input,
+                        active_storage_id=active_storage_id,
+                        llm_operator=llm_operator,
                     )
+                    _print_operation_result(result)
             else:
                 json_lines.append(user_input)
                 brace_balance = _update_brace_balance(brace_balance, user_input)
@@ -458,6 +461,87 @@ def _print_operation_result(result: OperationResult) -> None:
     print(system_block)
     print("-------- USER:")
     print(user_block)
+
+
+def _handle_llm_input(
+    user_input: str,
+    *,
+    active_storage_id: Optional[str],
+    llm_operator: LLMOperator,
+) -> OperationResult:
+    system_log: List[str] = [f"Input: {user_input}"]
+    if not active_storage_id:
+        system_log.append("No active storage for LLM input.")
+        return OperationResult.failure(
+            user_text="Немає активного складу. Спочатку вибери склад через +activatestorage.",
+            system_log=system_log,
+        )
+
+    llm_result, snapshot, model = llm_operator.run(
+        user_text=user_input,
+        active_storage_id=active_storage_id,
+    )
+    system_log.append(f"Active storage: {active_storage_id}")
+    system_log.append(f"OpenAI model: {model or 'unknown'}")
+    system_log.append("OpenAI key present: yes" if os.getenv("OPENAI_API_KEY") else "OpenAI key present: no")
+    system_log.append("Snapshot text:")
+    system_log.append(snapshot.snapshot_text)
+    system_log.extend(llm_result.system_log or [])
+    if llm_result.raw_response:
+        system_log.append(f"Raw LLM JSON: {llm_result.raw_response}")
+    if llm_result.parsed:
+        system_log.append(f"Parsed LLM: {json.dumps(llm_result.parsed, ensure_ascii=False)}")
+
+    if not llm_result.ok:
+        return OperationResult.failure(user_text=llm_result.assistant_text, system_log=system_log)
+
+    if llm_result.need_more_info:
+        questions = "\n".join(f"- {q}" for q in llm_result.questions)
+        user_text = llm_result.assistant_text
+        if questions:
+            user_text = f"{user_text}\n\nПитання:\n{questions}"
+        return OperationResult.success(user_text=user_text, system_log=system_log)
+
+    executed = []
+    for command in llm_result.commands:
+        payload = command.get("payload") or {}
+        storage_id = command.get("storage_id")
+        resolved_storage = active_storage_id if storage_id == "ACTIVE_STORAGE" else storage_id
+        command_payload = {
+            "command": command.get("command"),
+            "payload": payload,
+            "storage_id": resolved_storage,
+        }
+        system_log.append(f"Executing: {json.dumps(command_payload, ensure_ascii=False)}")
+        response = handle_command(command_payload)
+        _append_action_log(command_payload, response)
+        system_log.append(f"Core result: {json.dumps(response.to_dict(), ensure_ascii=False)}")
+        executed.append(response)
+        if not response.ok:
+            user_text = (
+                f"{llm_result.assistant_text}\n\n"
+                "Сталася помилка під час виконання. Спробуй ще раз або уточни запит."
+            )
+            return OperationResult.failure(user_text=user_text, system_log=system_log)
+
+    return OperationResult.success(user_text=llm_result.assistant_text, system_log=system_log)
+
+
+def _append_action_log(command_payload: Dict[str, Any], response: OperationResult) -> None:
+    log_dir = Path("logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "actions.log"
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "storage_id": command_payload.get("storage_id"),
+        "command": command_payload.get("command"),
+        "payload": command_payload.get("payload"),
+        "core_ok": response.ok,
+    }
+    if not response.ok:
+        entry["core_error"] = response.user_text
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
 def _truncate_text(value: str, max_width: int) -> str:
