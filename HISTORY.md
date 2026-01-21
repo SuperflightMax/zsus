@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 17
+- Rewrote LLM base, PASS1, and PASS2 system prompts to enforce the updated interpretation and reply rules.
+
 # 16
 - Passed OpenAI initialization errors into the LLM adapter so CLI/system logs surface configuration issues.
 - Expanded OpenAI client failures with HTTP/network detail to aid debugging of unavailable LLM requests.

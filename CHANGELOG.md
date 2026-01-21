@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 17
+- Updated LLM system prompts for base behavior, PASS1 interpretation, and PASS2 operator reply.
+
 # 16
 - Exposed LLM initialization errors in CLI/system logs and improved OpenAI client error details for easier diagnosis.
 
