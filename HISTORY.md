@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 12
+- Introduced `OperationResult` as the unified response object for core and interfaces, carrying `ok`, `user_text`, `system_log`, and `data`, and refactored the CLI to render distinct `-------- SYSTEM:` / `-------- USER:` blocks.
+- Centralized command defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and routed all incoming commands through a policy layer that applies defaults, validates required fields, and returns structured failures without raising for user scenarios.
+- Added tests for the new result shape, policy defaults, and updated expectation matcher to support the new `ok` contract while preserving partial data checks.
+
 # 11
 - Added short admin aliases `+ls` (list storages), `+li` (list items of active storage), and `+as` (activate storage) to reduce typing in the CLI.
 - Added a Windows helper script `cliw.bat` that creates/activates `.venv` and runs `python -m src.interfaces.cli.main` from the repository root.
