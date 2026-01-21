@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 13
+- CLI now reads `DEFAULT_STORAGE` from `.env` on startup, activating the storage if it exists and logging a warning if it does not.
+- Removed the LLM enable/disable flag so the interpreter always responds, and cleaned up the default config/env templates accordingly.
+
 # 12
 - Introduced `OperationResult` as the unified response object for core and interfaces, carrying `ok`, `user_text`, `system_log`, and `data`, and refactored the CLI to render distinct `-------- SYSTEM:` / `-------- USER:` blocks.
 - Centralized command defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and routed all incoming commands through a policy layer that applies defaults, validates required fields, and returns structured failures without raising for user scenarios.

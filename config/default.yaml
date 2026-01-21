@@ -19,8 +19,6 @@ storage:
   sqlite_filename: "storage.db"
 logging:
   level: "INFO"
-llm:
-  enabled: true
 media:
   store_images: true
   store_audio: true

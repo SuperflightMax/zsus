@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 13
+- Added `DEFAULT_STORAGE` support for CLI startup to auto-activate an existing storage from `.env` and documented the behavior.
+- Removed the LLM enable/disable switch so the interpreter always runs, and trimmed related config/env toggles.
+
 # 12
 - Unified command responses under `OperationResult` with explicit `ok`, `user_text`, `system_log`, and `data`, and updated CLI to print separated SYSTEM/USER blocks with structured logs.
 - Centralized defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and applied them via a policy layer before the core engine, plus standardized user-facing error texts without raises/prints.

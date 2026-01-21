@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
@@ -38,6 +39,13 @@ def run() -> None:
     table_max_width = config.get("cli", {}).get("table_max_width", 24)
     registry = StorageRegistry(config)
     active_storage_id: Optional[str] = None
+    default_storage_id = os.getenv("DEFAULT_STORAGE")
+    if default_storage_id:
+        if registry.storage_exists(default_storage_id):
+            active_storage_id = default_storage_id
+            logging.info("Default storage activated: %s", default_storage_id)
+        else:
+            logging.warning("Default storage not found: %s", default_storage_id)
 
     logging.info("CLI started. Type an exit command to quit.")
 
