@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
@@ -36,7 +37,7 @@ def run() -> None:
     exit_commands = config.get("cli", {}).get("exit_commands", ["exit"])
     table_max_width = config.get("cli", {}).get("table_max_width", 24)
     registry = StorageRegistry(config)
-    active_storage_id: Optional[str] = None
+    active_storage_id = _resolve_default_storage_id(registry)
 
     logging.info("CLI started. Type an exit command to quit.")
 
@@ -93,6 +94,20 @@ def run() -> None:
 
     except KeyboardInterrupt:
         logging.info("CLI interrupted by user.")
+
+
+def _resolve_default_storage_id(registry: StorageRegistry) -> Optional[str]:
+    default_storage = os.getenv("DEFAULT_STORAGE")
+    if not default_storage:
+        return None
+
+    if not registry.storage_exists(default_storage):
+        registry.create_storage(default_storage)
+        logging.info("Default storage created: %s", default_storage)
+
+    handle_command({"command": "create_storage", "payload": {"storage_id": default_storage}})
+    logging.info("Default storage set to: %s", default_storage)
+    return default_storage
 
 
 def _get_prompt_template(config: Dict[str, Any]) -> str:
