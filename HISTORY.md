@@ -1,7 +1,7 @@
 # last change always at the top here (under this line)
 
 # 14
-- Updated OpenAI client configuration to read model and base URL from .env overrides, matching env.example variables.
+- Updated OpenAI client configuration to read model override from .env while keeping API URL from config only.
 
 # 13
 - Implemented end-to-end LLM pipeline for plain text CLI input: interpret DraftCommand, validate, execute core, and generate Ukrainian user reply with full SYSTEM trace logging.

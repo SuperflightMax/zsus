@@ -1,7 +1,7 @@
 # last change always at the top here (under this line)
 
 # 14
-- Switched OpenAI client to honor .env model/base URL overrides (OPENAI_MODEL, OPENAI_BASE_URL) for LLM calls.
+- Switched OpenAI client to honor .env model override (OPENAI_MODEL) and keep API URL from config only.
 
 # 13
 - Added LLM end-to-end pipeline for plain text CLI input, including prompt loading, OpenAI client integration (stdlib HTTP), interpreter/gate/responder flow, and inventory list intent support.

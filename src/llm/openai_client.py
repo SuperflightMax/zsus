@@ -25,8 +25,7 @@ class OpenAIClient:
     def __init__(self, config: Dict[str, Any]):
         llm_config = config.get("llm", {})
         self._api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("OPENAI_BASE_URL") or llm_config.get("api_url") or "https://api.openai.com/v1"
-        self._api_url = f"{base_url.rstrip('/')}/chat/completions"
+        self._api_url = llm_config.get("api_url", "https://api.openai.com/v1/chat/completions")
         self._model = os.getenv("OPENAI_MODEL") or llm_config.get("model", "gpt-4o-mini")
         self._temperature = llm_config.get("temperature", 0)
         self._max_tokens = llm_config.get("max_tokens", 300)
