@@ -58,8 +58,14 @@ class OpenAIClient(LLMClient):
         try:
             with request.urlopen(request_obj, timeout=self._timeout_s) as response:
                 raw = response.read().decode("utf-8")
-        except (url_error.HTTPError, url_error.URLError, TimeoutError) as exc:
-            raise LLMUnavailableError("OpenAI request failed.") from exc
+        except url_error.HTTPError as exc:
+            detail = _format_http_error(exc)
+            raise LLMUnavailableError(f"OpenAI request failed. {detail}") from exc
+        except url_error.URLError as exc:
+            reason = getattr(exc, "reason", exc)
+            raise LLMUnavailableError(f"OpenAI request failed. Network error: {reason}") from exc
+        except TimeoutError as exc:
+            raise LLMUnavailableError("OpenAI request failed. Timeout.") from exc
 
         try:
             parsed = json.loads(raw)
@@ -81,3 +87,16 @@ def _extract_chat_content(payload: Dict[str, Any]) -> str | None:
         return None
     content = message.get("content")
     return content if isinstance(content, str) else None
+
+
+def _format_http_error(exc: url_error.HTTPError) -> str:
+    status = getattr(exc, "code", "unknown")
+    reason = getattr(exc, "reason", "unknown")
+    body = ""
+    try:
+        payload = exc.read().decode("utf-8")
+        if payload:
+            body = f" Response body: {payload}"
+    except Exception:  # noqa: BLE001
+        body = ""
+    return f"HTTP {status} {reason}.{body}"

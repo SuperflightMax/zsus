@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 16
+- Passed OpenAI initialization errors into the LLM adapter so CLI/system logs surface configuration issues.
+- Expanded OpenAI client failures with HTTP/network detail to aid debugging of unavailable LLM requests.
+
 # 15
 - Updated PASS1 handling to request JSON output, parse nested draft_command responses (with legacy fallback), and insert separators between base and pass prompts.
 - Expanded LLM system logs with the pass1 prompt name, response format, and model identifier for better observability.

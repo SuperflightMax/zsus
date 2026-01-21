@@ -31,16 +31,22 @@ def _init_backend(config: Dict[str, Any]) -> Tuple[str, Any]:
 def _init_llm_adapter(config: Dict[str, Any]) -> LLMAdapter2Pass:
     llm_config = config.get("llm", {})
     client = None
+    init_error = None
     if llm_config.get("enabled", False):
         try:
             client = OpenAIClient()
         except LLMUnavailableError as exc:
             logging.warning("LLM unavailable: %s", exc)
+            init_error = str(exc)
     else:
         logging.info("LLM disabled in configuration.")
 
     threshold = config.get("core", {}).get("confidence_threshold", 0.7)
-    return LLMAdapter2Pass(llm_client=client, confidence_threshold=threshold)
+    return LLMAdapter2Pass(
+        llm_client=client,
+        confidence_threshold=threshold,
+        llm_init_error=init_error,
+    )
 
 
 def run() -> None:

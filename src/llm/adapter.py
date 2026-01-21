@@ -58,10 +58,12 @@ class LLMAdapter2Pass:
         llm_client: Optional[LLMClient],
         confidence_threshold: float,
         engine: Optional[CoreEngine] = None,
+        llm_init_error: Optional[str] = None,
     ) -> None:
         self._llm_client = llm_client
         self._confidence_threshold = confidence_threshold
         self._engine = engine
+        self._llm_init_error = llm_init_error
         self._base_prompt = _load_prompt("system_prompt_base.txt")
         self._pass1_prompt = _load_prompt("system_prompt_pass1.txt")
         self._pass2_prompt = _load_prompt("system_prompt_pass2.txt")
@@ -80,6 +82,8 @@ class LLMAdapter2Pass:
         system_log.append("pass1_prompt=system_prompt_base.txt + system_prompt_pass1.txt")
         system_log.append("response_format_pass1=json_object")
         system_log.append(f"model={_client_model(self._llm_client) or 'unknown'}")
+        if self._llm_init_error:
+            system_log.append(f"llm_init_error={self._llm_init_error}")
 
         try:
             draft, confidence, raw_pass1 = self._pass1(interaction_context, allowed_intents, mvp_mode)
@@ -163,7 +167,10 @@ class LLMAdapter2Pass:
         response_format: Optional[dict] = None,
     ) -> str:
         if not self._llm_client:
-            raise LLMUnavailableError("LLM client not configured.")
+            message = "LLM client not configured."
+            if self._llm_init_error:
+                message = f"{message} {self._llm_init_error}"
+            raise LLMUnavailableError(message)
         try:
             return self._llm_client.generate(
                 system_prompt,
