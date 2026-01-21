@@ -13,6 +13,7 @@ from ...infra.storage_registry import StorageRegistry
 from ...infra.backend_factory import create_backend
 from ...core.engine import handle_command, set_default_backend
 from ...core.result import OperationResult
+from ...app.formatting import DEFAULT_EMPTY_MESSAGE, DEFAULT_UNPLACED_LABEL, render_inventory_table
 from ...app.message_handler import handle_user_message
 from .routing import classify_input, starts_json, truncate_data
 
@@ -430,28 +431,12 @@ def _match_expect(expect: Any, response: Dict[str, Any]) -> bool:
 
 
 def _render_storage_table(snapshot: Dict[str, Dict[str, int]], max_width: int) -> List[str]:
-    if not snapshot:
-        return ["(storage is empty)"]
-
-    rows = []
-    for item_id in sorted(snapshot.keys()):
-        locations = snapshot[item_id]
-        for location_key in sorted(locations.keys()):
-            qty = locations[location_key]
-            item_display = _truncate_text(item_id, max_width)
-            location_display = "(unplaced)" if location_key == "null" else _truncate_text(str(location_key), max_width)
-            rows.append((item_display, location_display, qty))
-
-    item_width = max([len("Item")] + [len(row[0]) for row in rows])
-    location_width = max([len("Location")] + [len(row[1]) for row in rows])
-    qty_width = max([len("Qty")] + [len(str(row[2])) for row in rows])
-
-    header = f"{'Item':<{item_width}}  {'Location':<{location_width}}  {'Qty':>{qty_width}}"
-    separator = f"{'-' * item_width}  {'-' * location_width}  {'-' * qty_width}"
-    lines = [header, separator]
-    for item_display, location_display, qty in rows:
-        lines.append(f"{item_display:<{item_width}}  {location_display:<{location_width}}  {qty:>{qty_width}}")
-    return lines
+    return render_inventory_table(
+        snapshot,
+        max_width=max_width,
+        unplaced_label=DEFAULT_UNPLACED_LABEL,
+        empty_message=DEFAULT_EMPTY_MESSAGE,
+    )
 
 
 def _print_operation_result(result: OperationResult, *, data_max_chars: int = 50) -> None:

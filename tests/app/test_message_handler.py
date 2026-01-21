@@ -4,11 +4,8 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.app.message_handler import (
-    DEFAULT_STORAGE_MISSING,
-    DEFAULT_USER_FALLBACK,
-    handle_user_message,
-)
+from src.app.formatting import render_inventory_table
+from src.app.message_handler import DEFAULT_STORAGE_MISSING, DEFAULT_USER_FALLBACK, handle_user_message
 from src.core.result import OperationResult
 
 
@@ -38,6 +35,16 @@ class RecordingCore:
     def __call__(self, command: Dict[str, Any]) -> OperationResult:
         self.calls.append(command)
         return self._result
+
+
+class RoutingCore:
+    def __init__(self, handler):
+        self.calls: List[Dict[str, Any]] = []
+        self._handler = handler
+
+    def __call__(self, command: Dict[str, Any]) -> OperationResult:
+        self.calls.append(command)
+        return self._handler(command)
 
 
 @pytest.fixture()
@@ -123,17 +130,108 @@ def test_intake_defaults_qty_to_one(base_config):
 
 def test_list_inventory_executes_and_returns_user_text(base_config):
     core = RecordingCore(OperationResult.success(data={"аптечка": {"null": 2}}))
+    expected_table = "\n".join(
+        render_inventory_table(
+            {"аптечка": {"null": 2}},
+            max_width=24,
+            unplaced_label="склад",
+            empty_message="Склад порожній.",
+        )
+    )
     result = handle_user_message(
         "що є на складі",
         active_storage_id="s1",
         config=base_config,
         core_handler=core,
         interpreter=FakeInterpreter({"confidence": 0.95, "draft_command": {"intent": "list_inventory"}}),
-        responder=FakeResponder("Є: аптечка — 2."),
+        responder=FakeResponder(expected_table),
     )
 
     assert result.ok is True
-    assert result.user_text == "Є: аптечка — 2."
+    assert result.user_text == expected_table
+
+
+def test_find_reply_includes_locations(base_config):
+    def handler(command: Dict[str, Any]) -> OperationResult:
+        if command["command"] == "list":
+            return OperationResult.success(data={})
+        if command["command"] == "find":
+            return OperationResult.success(
+                data={"item_id": "стакан", "total_qty": 2, "locations": {"столі": 1, "null": 1}}
+            )
+        return OperationResult.success(data={})
+
+    core = RoutingCore(handler)
+    expected_reply = "Стакан: 1 на столі, 1 на складі."
+    result = handle_user_message(
+        "де стакан",
+        active_storage_id="s1",
+        config=base_config,
+        core_handler=core,
+        interpreter=FakeInterpreter({"confidence": 0.9, "draft_command": {"intent": "find", "item_id": "стакан"}}),
+        responder=FakeResponder(expected_reply),
+    )
+
+    assert result.ok is True
+    assert result.user_text == expected_reply
+
+
+def test_move_all_expands_across_locations(base_config):
+    def handler(command: Dict[str, Any]) -> OperationResult:
+        if command["command"] == "list":
+            return OperationResult.success(data={})
+        if command["command"] == "find":
+            return OperationResult.success(
+                data={"item_id": "бинт", "total_qty": 3, "locations": {"null": 2, "ящик": 1}}
+            )
+        return OperationResult.success(data={})
+
+    core = RoutingCore(handler)
+    result = handle_user_message(
+        "поклади всі бинти в аптечку",
+        active_storage_id="s1",
+        config=base_config,
+        core_handler=core,
+        interpreter=FakeInterpreter(
+            {"confidence": 0.9, "draft_command": {"intent": "move", "item_id": "бинт", "qty": "all", "to": "аптечка"}}
+        ),
+        responder=FakeResponder("ok"),
+    )
+
+    assert result.ok is True
+    move_calls = [call for call in core.calls if call["command"] == "move"]
+    assert len(move_calls) == 2
+    assert move_calls[0]["payload"]["to"] == "аптечка"
+    assert move_calls[1]["payload"]["to"] == "аптечка"
+
+
+def test_consume_without_from_expands_by_policy(base_config):
+    def handler(command: Dict[str, Any]) -> OperationResult:
+        if command["command"] == "list":
+            return OperationResult.success(data={})
+        if command["command"] == "find":
+            return OperationResult.success(
+                data={"item_id": "бинт", "total_qty": 4, "locations": {"null": 2, "коробка": 2}}
+            )
+        return OperationResult.success(data={})
+
+    core = RoutingCore(handler)
+    result = handle_user_message(
+        "убери 3 бинта",
+        active_storage_id="s1",
+        config=base_config,
+        core_handler=core,
+        interpreter=FakeInterpreter({"confidence": 0.9, "draft_command": {"intent": "consume", "item_id": "бинт", "qty": 3}}),
+        responder=FakeResponder("ok"),
+    )
+
+    assert result.ok is True
+    consume_calls = [call for call in core.calls if call["command"] == "consume"]
+    assert len(consume_calls) == 2
+    assert consume_calls[0]["payload"]["from"] is None
+    assert consume_calls[0]["payload"]["qty"] == 2
+    assert consume_calls[1]["payload"]["from"] == "коробка"
+    assert consume_calls[1]["payload"]["qty"] == 1
 
 
 def test_user_text_pipeline_uses_active_storage_only(base_config):

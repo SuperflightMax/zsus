@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 17
+- Upgraded the LLM user-text pipeline to produce richer Ukrainian action reports for intake/move/consume, location-aware find replies, and table-formatted inventory listings with “склад” normalization.
+- Added expansion logic to handle “move all” and implicit move/consume without explicit source locations using deterministic location policy.
+- Introduced a shared inventory table formatter reused by the CLI and LLM pipeline, and updated prompts plus tests to cover the new UX behaviors.
+
 # 16
 - Added CLI config to cap SYSTEM data output length with an option to show full data when set to 0.
 

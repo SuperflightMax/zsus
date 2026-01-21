@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 17
+- Improved user-text LLM replies with location-aware find output, table-style inventory listing, and action reports for intake/move/consume (including “move all” and implicit consume/move from anywhere).
+- Added shared inventory table formatter with “склад” normalization for user outputs while preserving CLI table behavior, plus updated prompts and tests for the new UX flow.
+
 # 16
 - Added CLI config `system_data_max_chars` to truncate SYSTEM data output (0 disables truncation).
 

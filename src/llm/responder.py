@@ -35,6 +35,8 @@ class Responder:
             execution_status=context.get("execution", {}).get("status"),
             execution_data=json.dumps(context.get("execution", {}).get("data"), ensure_ascii=False),
             inventory_summary=json.dumps(context.get("inventory_summary"), ensure_ascii=False),
+            inventory_table="\n".join(context.get("inventory_table") or []),
+            action_summary=json.dumps(context.get("action_summary"), ensure_ascii=False),
             template_reply=context.get("template_reply"),
         )
 
