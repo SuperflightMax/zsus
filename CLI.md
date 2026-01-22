@@ -80,6 +80,8 @@ CLI використовується як:
 - `+activatestorage <storage_id>` — делает склад активным (ошибка, если склада нет). Алиас: `+as`.
 - `+status` — выводит состояние CLI (активный склад, backend, количество известных складов).
 - `+runscenario [--isolated] <file>` — выполняет шаги сценария из JSON-файла; `--isolated` создаёт временный склад, активирует его на время сценария и удаляет после завершения.
+- `+outsystemshow` — включает SYSTEM-вывод для LLM-ответов CLI. Алиас: `+oss`.
+- `+outsystemhide` — отключает SYSTEM-вывод для LLM-ответов CLI. Алиас: `+osh`.
 
 Backend выбирается конфигом (`storage.backend`): `memory` (по умолчанию) или `sqlite`
 с именем файла `storage.sqlite_filename` (по умолчанию `storage.db`), который создаётся
@@ -90,6 +92,8 @@ Backend выбирается конфигом (`storage.backend`): `memory` (п�
 Промпт формируется по шаблону `cli.prompt_template` (по умолчанию `bot{storage}> `):
 - без активного склада: `bot>`
 - с активным складом, например `sklad_fuel`: `bot:sklad_fuel>`
+
+SYSTEM-вывод для LLM по умолчанию настраивается через `cli.show_system_llm` (по умолчанию `false`).
 
 ## Default storage
 
