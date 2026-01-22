@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 16
+- Added CLI admin toggles `+outsystemshow`/`+outsystemhide` (`+oss`/`+osh`) to control SYSTEM output visibility for LLM responses only, leaving admin and core outputs unchanged.
+- Added `cli.show_system_llm` config default (false) and documented the new behavior in CLI docs.
+
 # 15
 - Escaped literal braces in the operator user prompt template to avoid format-time KeyError when rendering LLM prompts.
 

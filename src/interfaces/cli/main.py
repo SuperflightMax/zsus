@@ -39,6 +39,7 @@ def run() -> None:
     json_prompt = config.get("cli", {}).get("json_prompt", "... ")
     exit_commands = config.get("cli", {}).get("exit_commands", ["exit"])
     table_max_width = config.get("cli", {}).get("table_max_width", 24)
+    show_system_llm = config.get("cli", {}).get("show_system_llm", False)
     registry = StorageRegistry(config)
     active_storage_id: Optional[str] = None
     llm_operator = LLMOperator()
@@ -69,12 +70,13 @@ def run() -> None:
                 logging.info("Received input: %s", user_input)
 
                 if user_input.startswith("+"):
-                    active_storage_id = _handle_admin_command(
+                    active_storage_id, show_system_llm = _handle_admin_command(
                         user_input,
                         registry=registry,
                         active_storage_id=active_storage_id,
                         table_max_width=table_max_width,
                         backend_name=backend_name,
+                        show_system_llm=show_system_llm,
                     )
                     continue
 
@@ -97,7 +99,7 @@ def run() -> None:
                         active_storage_id=active_storage_id,
                         llm_operator=llm_operator,
                     )
-                    _print_operation_result(result)
+                    _print_operation_result(result, show_system=show_system_llm)
             else:
                 json_lines.append(user_input)
                 brace_balance = _update_brace_balance(brace_balance, user_input)
@@ -128,16 +130,19 @@ def _handle_admin_command(
     active_storage_id: Optional[str],
     table_max_width: int,
     backend_name: str,
-) -> Optional[str]:
+    show_system_llm: bool,
+) -> Tuple[Optional[str], bool]:
     tokens = command_line[1:].strip().split()
     if not tokens:
         _print_operation_result(OperationResult.failure(user_text="Невідома адмін-команда."))
-        return active_storage_id
+        return active_storage_id, show_system_llm
 
     command_aliases = {
         "ls": "liststorages",
         "li": "listitems",
         "as": "activatestorage",
+        "oss": "outsystemshow",
+        "osh": "outsystemhide",
     }
 
     command = command_aliases.get(tokens[0].lower(), tokens[0].lower())
@@ -146,7 +151,7 @@ def _handle_admin_command(
     if command == "createstorage":
         if not args:
             _print_operation_result(OperationResult.failure(user_text="Usage: +createstorage <storage_id>"))
-            return active_storage_id
+            return active_storage_id, show_system_llm
         storage_id = args[0]
         created = registry.create_storage(storage_id)
         if created:
@@ -154,22 +159,22 @@ def _handle_admin_command(
             _print_operation_result(result.with_prepended_logs([f"Storage created: {storage_id}"]))
         else:
             _print_operation_result(OperationResult.failure(user_text=f"Storage already exists: {storage_id}"))
-        return active_storage_id
+        return active_storage_id, show_system_llm
 
     if command == "deletestorage":
         if not args:
             _print_operation_result(OperationResult.failure(user_text="Usage: +deletestorage <storage_id>"))
-            return active_storage_id
+            return active_storage_id, show_system_llm
         storage_id = args[0]
         result = handle_command({"command": "delete_storage", "payload": {"storage_id": storage_id}})
         deleted = registry.delete_storage(storage_id)
         if deleted:
             _print_operation_result(result.with_prepended_logs([f"Storage deleted: {storage_id}"]))
             if active_storage_id == storage_id:
-                return None
+                return None, show_system_llm
         else:
             _print_operation_result(OperationResult.failure(user_text=f"Storage not found: {storage_id}"))
-        return active_storage_id
+        return active_storage_id, show_system_llm
 
     if command == "liststorages":
         storages = registry.list_storages()
@@ -181,32 +186,32 @@ def _handle_admin_command(
                 marker = " (active)" if storage == active_storage_id else ""
                 lines.append(f"- {storage}{marker}")
         _print_operation_result(OperationResult.success(user_text="\n".join(lines), system_log=lines))
-        return active_storage_id
+        return active_storage_id, show_system_llm
 
     if command == "activatestorage":
         if not args:
             _print_operation_result(OperationResult.failure(user_text="Usage: +activatestorage <storage_id>"))
-            return active_storage_id
+            return active_storage_id, show_system_llm
         storage_id = args[0]
         if not registry.storage_exists(storage_id):
             _print_operation_result(OperationResult.failure(user_text=f"Storage not found: {storage_id}"))
-            return active_storage_id
+            return active_storage_id, show_system_llm
         _print_operation_result(OperationResult.success(user_text=f"Active storage set to: {storage_id}"))
-        return storage_id
+        return storage_id, show_system_llm
 
     if command == "listitems":
         if not active_storage_id:
             _print_operation_result(OperationResult.failure(user_text="No active storage. Use +activatestorage first."))
-            return active_storage_id
+            return active_storage_id, show_system_llm
 
         response = handle_command({"command": "list", "storage_id": active_storage_id, "payload": {}})
         if not response.ok:
             _print_operation_result(response)
-            return active_storage_id
+            return active_storage_id, show_system_llm
 
         table_lines = _render_storage_table(response.data or {}, max_width=table_max_width)
         _print_operation_result(OperationResult.success(user_text="\n".join(table_lines), system_log=table_lines, data=response.data))
-        return active_storage_id
+        return active_storage_id, show_system_llm
 
     if command == "status":
         storages = registry.list_storages()
@@ -217,7 +222,7 @@ def _handle_admin_command(
             f"- Known storages: {len(storages)}",
         ]
         _print_operation_result(OperationResult.success(user_text="\n".join(lines), system_log=lines))
-        return active_storage_id
+        return active_storage_id, show_system_llm
 
     if command == "runscenario":
         isolated = False
@@ -230,18 +235,28 @@ def _handle_admin_command(
 
         if not files:
             _print_operation_result(OperationResult.failure(user_text="Usage: +runscenario [--isolated] <file>"))
-            return active_storage_id
+            return active_storage_id, show_system_llm
 
         scenario_file = files[0]
         if not isolated and active_storage_id is None:
             _print_operation_result(OperationResult.failure(user_text="No active storage. Use +activatestorage or --isolated."))
-            return active_storage_id
+            return active_storage_id, show_system_llm
 
         _run_scenario(scenario_file, registry, active_storage_id, isolated)
-        return active_storage_id
+        return active_storage_id, show_system_llm
+
+    if command == "outsystemshow":
+        show_system_llm = True
+        _print_operation_result(OperationResult.success(user_text="SYSTEM output for LLM is now ON."))
+        return active_storage_id, show_system_llm
+
+    if command == "outsystemhide":
+        show_system_llm = False
+        _print_operation_result(OperationResult.success(user_text="SYSTEM output for LLM is now OFF."))
+        return active_storage_id, show_system_llm
 
     _print_operation_result(OperationResult.failure(user_text=f"Unknown admin command: +{command}"))
-    return active_storage_id
+    return active_storage_id, show_system_llm
 
 
 def _starts_json(text: str) -> bool:
@@ -448,7 +463,7 @@ def _render_storage_table(snapshot: Dict[str, Dict[str, int]], max_width: int) -
     return lines
 
 
-def _print_operation_result(result: OperationResult) -> None:
+def _print_operation_result(result: OperationResult, *, show_system: bool = True) -> None:
     system_lines = list(result.system_log)
     if result.data is not None:
         try:
@@ -457,8 +472,9 @@ def _print_operation_result(result: OperationResult) -> None:
             system_lines.append(f"data: {result.data}")
     system_block = "\n".join(system_lines) if system_lines else "(empty)"
     user_block = result.user_text or ""
-    print("-------- SYSTEM:")
-    print(system_block)
+    if show_system:
+        print("-------- SYSTEM:")
+        print(system_block)
     print("-------- USER:")
     print(user_block)
 
