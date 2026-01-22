@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 17
+- Added in-memory dialogue context tracking in CLI sessions and passed it to LLM requests for short follow-up replies.
+- Logged the exact dialogue context in the CLI SYSTEM output alongside snapshots for debugging.
+- Documented the dialogue context lifecycle (retain on need_more_info, clear on completion) in LLM design notes.
+
 # 16
 - Added CLI admin toggles `+outsystemshow`/`+outsystemhide` (`+oss`/`+osh`) to control SYSTEM output visibility for LLM responses only, leaving admin and core outputs unchanged.
 - Added `cli.show_system_llm` config default (false) and documented the new behavior in CLI docs.

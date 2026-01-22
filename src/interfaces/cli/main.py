@@ -43,6 +43,7 @@ def run() -> None:
     registry = StorageRegistry(config)
     active_storage_id: Optional[str] = None
     llm_operator = LLMOperator()
+    dialogue_context: List[str] = []
     default_storage_id = os.getenv("DEFAULT_STORAGE")
     if default_storage_id:
         if registry.storage_exists(default_storage_id):
@@ -98,6 +99,7 @@ def run() -> None:
                         user_input,
                         active_storage_id=active_storage_id,
                         llm_operator=llm_operator,
+                        dialogue_context=dialogue_context,
                     )
                     _print_operation_result(result, show_system=show_system_llm)
             else:
@@ -484,6 +486,7 @@ def _handle_llm_input(
     *,
     active_storage_id: Optional[str],
     llm_operator: LLMOperator,
+    dialogue_context: List[str],
 ) -> OperationResult:
     system_log: List[str] = [f"Input: {user_input}"]
     if not active_storage_id:
@@ -493,13 +496,19 @@ def _handle_llm_input(
             system_log=system_log,
         )
 
+    dialogue_context.append(f"USER: {user_input}")
+    dialogue_context_text = "\n".join(dialogue_context)
+
     llm_result, snapshot, model = llm_operator.run(
         user_text=user_input,
         active_storage_id=active_storage_id,
+        dialogue_context=dialogue_context_text,
     )
     system_log.append(f"Active storage: {active_storage_id}")
     system_log.append(f"OpenAI model: {model or 'unknown'}")
     system_log.append("OpenAI key present: yes" if os.getenv("OPENAI_API_KEY") else "OpenAI key present: no")
+    system_log.append("Dialogue context:")
+    system_log.append(dialogue_context_text or "(empty)")
     system_log.append("Snapshot text:")
     system_log.append(snapshot.snapshot_text)
     system_log.extend(llm_result.system_log or [])
@@ -508,7 +517,10 @@ def _handle_llm_input(
     if llm_result.parsed:
         system_log.append(f"Parsed LLM: {json.dumps(llm_result.parsed, ensure_ascii=False)}")
 
+    dialogue_context.append(f"ASSISTANT: {llm_result.assistant_text}")
     if not llm_result.ok:
+        if not llm_result.need_more_info:
+            dialogue_context.clear()
         return OperationResult.failure(user_text=llm_result.assistant_text, system_log=system_log)
 
     if llm_result.need_more_info:
@@ -517,6 +529,8 @@ def _handle_llm_input(
         if questions:
             user_text = f"{user_text}\n\nПитання:\n{questions}"
         return OperationResult.success(user_text=user_text, system_log=system_log)
+
+    dialogue_context.clear()
 
     executed = []
     for command in llm_result.commands:

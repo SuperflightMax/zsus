@@ -43,7 +43,13 @@ class LLMOperator:
         self._system_prompt = self._load_prompt("operator.system.md")
         self._user_prompt_template = self._load_prompt("operator.user.md")
 
-    def run(self, *, user_text: str, active_storage_id: str) -> Tuple[LLMResult, SnapshotResult, str]:
+    def run(
+        self,
+        *,
+        user_text: str,
+        active_storage_id: str,
+        dialogue_context: str,
+    ) -> Tuple[LLMResult, SnapshotResult, str]:
         system_log: List[str] = []
         snapshot = self._build_snapshot(active_storage_id)
         system_log.extend(snapshot.system_log or [])
@@ -82,6 +88,7 @@ class LLMOperator:
 
         prompt = self._user_prompt_template.format(
             active_storage_id=active_storage_id,
+            dialogue_context=dialogue_context,
             snapshot_text=snapshot.snapshot_text,
             user_text=user_text,
         )

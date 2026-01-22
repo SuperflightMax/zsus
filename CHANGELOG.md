@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 17
+- Added CLI-scoped dialogue context memory that is sent with each LLM request and cleared after completion when need_more_info is false.
+- Included the dialogue context in CLI SYSTEM output for traceability and updated LLM design documentation.
+
 # 16
 - Added CLI admin commands `+outsystemshow`/`+outsystemhide` (`+oss`/`+osh`) to toggle SYSTEM output for LLM responses without affecting admin/core output.
 - Added `cli.show_system_llm` default config (false) and documented the new CLI behavior.
