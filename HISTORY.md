@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 18
+- Escaped JSON examples in the LLM operator prompt template to avoid format errors after adding dialogue context formatting.
+
 # 17
 - Added in-memory dialogue context tracking in CLI sessions and passed it to LLM requests for short follow-up replies.
 - Logged the exact dialogue context in the CLI SYSTEM output alongside snapshots for debugging.

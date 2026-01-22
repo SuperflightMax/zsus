@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 18
+- Escaped JSON examples in the LLM operator prompt template to prevent format-time KeyError when rendering dialogue context prompts.
+
 # 17
 - Added CLI-scoped dialogue context memory that is sent with each LLM request and cleared after completion when need_more_info is false.
 - Included the dialogue context in CLI SYSTEM output for traceability and updated LLM design documentation.

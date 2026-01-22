@@ -10,33 +10,33 @@ SNAPSHOT (актуальний стан складу):
 
 list
 Формат:
-{ "command": "list", "payload": {}, "storage_id": "ACTIVE_STORAGE" }
+{{ "command": "list", "payload": {{}}, "storage_id": "ACTIVE_STORAGE" }}
 
 intake
 Додає предмети. Формат payload:
-{
+{{
 "items": [
-{ "item_id": "string", "qty": 1, "location": "string або null (склад)" }
+{{ "item_id": "string", "qty": 1, "location": "string або null (склад)" }}
 ]
-}
+}}
 storage_id завжди ACTIVE_STORAGE.
 
 move
 Переміщує предмети. Формат payload:
-{
+{{
 "item_id": "string",
 "qty": 1,
 "from": "string або null (склад)",
 "to": "string або null (склад)"
-}
+}}
 
 consume
 Списує/забирає предмет(и). Формат payload:
-{
+{{
 "item_id": "string",
 "qty": 1,
 "from": "string або null (склад)"
-}
+}}
 
 ЗАПИТ КОРИСТУВАЧА:
 {user_text}
