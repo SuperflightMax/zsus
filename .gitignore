@@ -13,3 +13,4 @@ storages/
 !logs/actions.log
 .vscode/extensions.json
 notes.txt
+*.log
