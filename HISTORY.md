@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 19
+- Added session layer (ChatSession + SessionManager) to centralize LLM dialogue context and command execution for client-agnostic interfaces.
+- Refactored CLI to delegate normal text handling to ChatSession while keeping admin commands, scenario runner, and output formatting unchanged.
+- Added tests covering ChatSession context retention/clearing behavior and updated change logs.
+
 # 18
 - Escaped JSON examples in the LLM operator prompt template to avoid format errors after adding dialogue context formatting.
 
