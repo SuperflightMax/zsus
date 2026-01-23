@@ -21,10 +21,117 @@
 - Check environment health:
   - `./doctor.sh`
 
-Sample queries (UA/RU/surzhyk):
-- “що є на складі?”
-- “де всі каністри?”
-- “я забрав усі фляги”
-- “поклади всі бинти в аптечку”
-- “додай 5 рукавиць на склад”
-- “медичне що є?”
+# деплой на VPS (Ubuntu 24.04)
+
+Робоча папка: ~/zsus/
+Режим: прототип, без systemd/pm2
+Перезапуск сервера = втрата контексту (це ок)
+
+## Підготовка VPS (один раз)
+
+Оновити систему та встановити базові пакети:
+
+sudo apt update
+sudo apt install -y git python3 python3-venv unzip
+
+Отримання коду в ~/zsus/
+
+Варіант А — клонувати конкретну гілку:
+
+mkdir -p ~/zsus
+cd ~
+git clone -b НАЗВА_ГІЛКИ --single-branch URL_РЕПОЗИТОРІЮ zsus
+cd ~/zsus
+
+Приклад:
+git clone -b main --single-branch https://github.com/you/zsus.git
+ zsus
+
+Варіант Б — якщо репозиторій уже є:
+
+cd ~/zsus
+git status
+git pull --rebase
+
+## Перший запуск (один раз для VPS)
+
+Запустити bootstrap-скрипт:
+
+cd ~/zsus
+bash boot.sh
+
+Скрипт:
+створить .venv (якщо його нема)
+встановить залежності
+створить папку logs/
+скопіює env.example → .env (якщо .env не існує)
+
+Після цього відредагувати .env:
+nano .env
+
+Мінімально необхідно:
+OPENAI_API_KEY=ваш_ключ
+
+## Перевірка середовища
+
+Запустити перевірку:
+
+cd ~/zsus
+bash doctor.sh
+
+Очікування:
+скрипт виведе OK / FAIL для кожного пункту
+код виходу 0, якщо критичних проблем немає
+
+## Запуск CLI
+
+cd ~/zsus
+bash cli.sh
+
+
+## Оновлення коду
+
+Коли потрібно підтягнути зміни:
+
+cd ~/zsus
+bash update.sh
+bash doctor.sh
+bash cli.sh
+
+update.sh:
+
+виконує git pull --rebase
+перевстановлює залежності
+записує дату та git hash у logs/deploy.log
+
+## Логи
+
+logs/deploy.log
+історія деплоїв (дата + git hash)
+
+logs/actions.log
+лог виконаних команд/операцій (прототипний аудит)
+
+## Типові проблеми
+
+Скрипти не запускаються (permission denied):
+
+cd ~/zsus
+chmod +x boot.sh update.sh cli.sh doctor.sh
+
+Потрібно змінити гілку:
+
+cd ~/zsus
+git fetch
+git checkout НАЗВА_ГІЛКИ
+
+Doctor каже, що нема OPENAI_API_KEY:
+
+nano .env
+(додати або виправити ключ)
+
+Проблеми з Python або venv:
+
+cd ~/zsus
+rm -rf .venv
+bash boot.sh
