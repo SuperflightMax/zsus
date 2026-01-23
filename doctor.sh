@@ -10,6 +10,8 @@ check() {
 
   if [[ "$status" == "ok" ]]; then
     printf 'OK   %-30s %s\n' "$label" "$detail"
+  elif [[ "$status" == "warn" ]]; then
+    printf 'WARN %-30s %s\n' "$label" "$detail"
   else
     printf 'FAIL %-30s %s\n' "$label" "$detail"
     failures=$((failures + 1))
@@ -89,6 +91,16 @@ if [[ -n "${DEFAULT_STORAGE:-}" ]]; then
   check "DEFAULT_STORAGE" ok "$DEFAULT_STORAGE"
 else
   check "DEFAULT_STORAGE" fail "not set"
+fi
+
+if [[ -n "${ZSUS_HTTP_PORT:-}" ]]; then
+  if [[ "${ZSUS_HTTP_PORT}" =~ ^[0-9]+$ ]] && ((ZSUS_HTTP_PORT >= 1 && ZSUS_HTTP_PORT <= 65535)); then
+    check "ZSUS_HTTP_PORT" ok "$ZSUS_HTTP_PORT"
+  else
+    check "ZSUS_HTTP_PORT" warn "invalid (${ZSUS_HTTP_PORT})"
+  fi
+else
+  check "ZSUS_HTTP_PORT" ok "not set"
 fi
 
 db_filename="storage.db"
