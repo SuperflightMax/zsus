@@ -31,6 +31,23 @@ function setBusy(isBusy) {
   sendButton.disabled = isBusy;
 }
 
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight;
+  });
+}
+
+const observer = new MutationObserver(() => {
+  scrollToBottom();
+});
+
+observer.observe(messages, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
+
 async function sendMessage(text) {
   setBusy(true);
   appendMessage(text, "user");
@@ -53,6 +70,9 @@ async function sendMessage(text) {
       const message = data && data.message ? data.message : "Помилка запиту";
       pending.textContent = `Помилка: ${message}`;
       pending.classList.remove("message--pending");
+
+      scrollToBottom();
+
       return;
     }
 
@@ -63,9 +83,12 @@ async function sendMessage(text) {
 
     pending.textContent = data.reply || "";
     pending.classList.remove("message--pending");
+    scrollToBottom();
   } catch (error) {
     pending.textContent = "Помилка: сервер недоступний";
     pending.classList.remove("message--pending");
+    scrollToBottom();
+
   } finally {
     setBusy(false);
     input.focus();

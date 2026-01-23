@@ -1,5 +1,13 @@
 # last change always at the top here (under this line)
 
+
+# 24
+- Made chat auto-scroll fire on every DOM update so the latest message is always visible.
+
+# 23
+- Fixed SQLite backend usage for threaded HTTP requests by allowing cross-thread connections and serializing access per storage.
+- Added chat UI auto-scroll so the latest reply stays visible after updates.
+
 # 22
 - Added a built-in static web client served by the HTTP server at `/` and `/web/*`.
 - Added `/api/chat` as the primary HTTP endpoint while keeping `/chat` as a compatibility alias.

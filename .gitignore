@@ -20,3 +20,6 @@ pycache/
 
 
 
+/logs
+*.log
+logs/actions.log
