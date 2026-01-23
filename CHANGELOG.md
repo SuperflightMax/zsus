@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 21
+- Added a minimal HTTP interface (`/health`, `/chat`) using the standard library HTTP server and per-client sessions.
+- Added `http.sh` and `httpw.bat` helpers for launching the HTTP adapter.
+- Added a non-critical doctor check for `ZSUS_HTTP_PORT` validity and formatted HTTP.md as a proper spec.
+
 # 20
 - Added root-level VPS helper scripts (boot, update, CLI, doctor) for Ubuntu 24.04 prototype deployments.
 - Documented the new scripts in OPERATIONS.md.

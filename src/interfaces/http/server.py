@@ -1,0 +1,162 @@
+"""Minimal HTTP adapter for ChatSession."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any, Dict, Optional
+from uuid import uuid4
+
+from ...core.engine import set_default_backend
+from ...infra import load_config
+from ...infra.backend_factory import create_backend
+from ...infra.storage_registry import StorageRegistry
+from ...session import SessionManager
+
+DEFAULT_HOST = "0.0.0.0"
+DEFAULT_PORT = 8123
+
+
+class ChatHandler(BaseHTTPRequestHandler):
+    """HTTP handler for health checks and chat requests."""
+
+    server_version = "zsus-http/0.1"
+
+    def do_GET(self) -> None:  # noqa: N802
+        if self.path != "/health":
+            self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
+            return
+
+        self._send_json(200, {"ok": True})
+
+    def do_POST(self) -> None:  # noqa: N802
+        if self.path != "/chat":
+            self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
+            return
+
+        try:
+            payload = self._read_json()
+        except ValueError as exc:
+            self._send_json(400, {"ok": False, "error": "bad_request", "message": str(exc)})
+            return
+
+        text = payload.get("text")
+        if not isinstance(text, str) or not text.strip():
+            self._send_json(400, {"ok": False, "error": "bad_request", "message": "text is required"})
+            return
+
+        client_id = payload.get("client_id")
+        if not isinstance(client_id, str) or not client_id.strip():
+            client_id = str(uuid4())
+
+        try:
+            session = self.server.session_manager.get(client_id)
+            if session.active_storage_id is None and self.server.default_storage_id:
+                session.set_active_storage_id(self.server.default_storage_id)
+            result = session.handle_text(text)
+            response = {"ok": True, "client_id": client_id, "reply": result.user_text}
+            self._send_json(200, response)
+        except Exception as exc:  # noqa: BLE001
+            logging.exception("Unhandled error in /chat")
+            self._send_json(500, {"ok": False, "error": "internal_error", "message": str(exc)})
+
+    def _read_json(self) -> Dict[str, Any]:
+        length_header = self.headers.get("Content-Length")
+        if length_header is None:
+            raise ValueError("missing request body")
+        try:
+            length = int(length_header)
+        except ValueError as exc:
+            raise ValueError("invalid Content-Length") from exc
+
+        raw_body = self.rfile.read(length).decode("utf-8")
+        if not raw_body:
+            raise ValueError("empty request body")
+        try:
+            data = json.loads(raw_body)
+        except json.JSONDecodeError as exc:
+            raise ValueError("invalid json") from exc
+
+        if not isinstance(data, dict):
+            raise ValueError("json body must be an object")
+        return data
+
+    def _send_json(self, status: int, payload: Dict[str, Any]) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
+        logging.info("%s - %s", self.address_string(), format % args)
+
+
+class ChatHTTPServer(ThreadingHTTPServer):
+    """Threaded HTTP server carrying shared session manager."""
+
+    def __init__(
+        self,
+        server_address: tuple[str, int],
+        handler_class: type[BaseHTTPRequestHandler],
+        *,
+        session_manager: SessionManager,
+        default_storage_id: Optional[str],
+    ) -> None:
+        super().__init__(server_address, handler_class)
+        self.session_manager = session_manager
+        self.default_storage_id = default_storage_id
+
+
+def _load_default_storage_id(registry: StorageRegistry) -> Optional[str]:
+    storage_id = os.getenv("DEFAULT_STORAGE")
+    if not storage_id:
+        return None
+    if registry.storage_exists(storage_id):
+        return storage_id
+    logging.warning("Default storage not found: %s", storage_id)
+    return None
+
+
+def _resolve_port(raw_port: Optional[str]) -> int:
+    if raw_port is None or raw_port == "":
+        return DEFAULT_PORT
+    port = int(raw_port)
+    if port < 1 or port > 65535:
+        raise ValueError("ZSUS_HTTP_PORT must be between 1 and 65535")
+    return port
+
+
+def run() -> None:
+    config = load_config()
+    logging_level = config.get("logging", {}).get("level", "INFO")
+    logging.basicConfig(level=getattr(logging, logging_level.upper(), logging.INFO))
+
+    _, backend = create_backend(config)
+    set_default_backend(backend)
+
+    registry = StorageRegistry(config)
+    default_storage_id = _load_default_storage_id(registry)
+
+    host = os.getenv("ZSUS_HTTP_HOST", DEFAULT_HOST)
+    port = _resolve_port(os.getenv("ZSUS_HTTP_PORT"))
+
+    server = ChatHTTPServer(
+        (host, port),
+        ChatHandler,
+        session_manager=SessionManager(),
+        default_storage_id=default_storage_id,
+    )
+
+    logging.info("HTTP server listening on %s:%s", host, port)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        logging.info("HTTP server stopped.")
+
+
+if __name__ == "__main__":
+    run()

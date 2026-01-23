@@ -1,99 +1,107 @@
-HTTP Interface (MVP)
+# HTTP Interface (MVP)
 
-Цель
+## Goal
 
-Дать простой HTTP-адаптер для ChatSession, чтобы подключать любые клиенты (Web/Android/Telegram/…).
+Provide a minimal HTTP adapter for `ChatSession` so web/Android/Telegram/other clients can connect
+without changing core/LLM logic. The HTTP layer has **no business logic**: it only accepts input,
+invokes `SessionManager`/`ChatSession`, and returns the USER response.
 
-HTTP-слой не содержит логики: только принимает ввод, дергает SessionManager/ChatSession, возвращает USER-ответ.
+Prototype constraints are explicit and intentional: no auth, no persistence, server restart resets sessions.
 
-Прототип: без авторизации, без персистентности, рестарт сервера = потеря сессий/контекстов (OK).
+## Core Concepts
 
-Базовые понятия
+- **client_id** — string identifier for a client session (dialogue context isolation).
+  - If not provided, the server generates one and returns it.
+  - The client must store it and send it on all subsequent requests.
+- **storage_id** — single shared storage for now (`DEFAULT_STORAGE`). Context is still per-client.
 
-client_id: строковый идентификатор “клиентской сессии”. Нужен для изоляции диалогового контекста.
+## Bind / Network
 
-Если client_id не передан, сервер генерирует новый и возвращает его. Клиент обязан сохранить client_id и передавать в следующих запросах.
+- **Default host:** `0.0.0.0`
+- **Default port:** `8123`
+- Optional overrides:
+  - `ZSUS_HTTP_HOST`
+  - `ZSUS_HTTP_PORT`
 
-storage_id: на этом этапе один общий склад для всех (DEFAULT_STORAGE). Контекст всё равно у каждого свой.
+## Endpoints
 
-Network / Bind
+### `GET /health`
 
-HTTP-сервер поднимается самим проектом, на отдельном порту.
+**Purpose:** liveness check.
 
-Default порт: 8123
+**Response 200**
+```json
+{ "ok": true }
+```
 
-Опционально можно переопределить через .env (ZSUS_HTTP_PORT). Если переменной нет — используем дефолт.
+### `POST /chat`
 
-Host по умолчанию: 0.0.0.0 (чтобы было доступно извне). Опционально: ZSUS_HTTP_HOST.
+**Purpose:** send a user message and receive assistant reply.
 
-Endpoints
+**Request JSON**
+```json
+{
+  "text": "string (required)",
+  "client_id": "string (optional)"
+}
+```
 
-GET /health
-Назначение: проверка, что сервис жив.
-Ответ 200 JSON:
+**Response 200**
+```json
+{
+  "ok": true,
+  "client_id": "<client_id>",
+  "reply": "<OperationResult.user_text>"
+}
+```
 
-ok: true
+## Errors
 
-POST /chat
-Назначение: отправить “сообщение пользователя” и получить ответ ассистента.
-Request JSON:
+### 400 — Bad Request
 
-text: string (обязательно)
+Returned when:
+- `text` is missing
+- `text` is not a string or empty
+- invalid JSON
 
-client_id: string (опционально)
+**Response JSON**
+```json
+{
+  "ok": false,
+  "error": "bad_request",
+  "message": "text is required"
+}
+```
 
-Response 200 JSON:
+### 500 — Internal Error
 
-ok: true
+Unexpected server error.
 
-client_id: string (всегда возвращается; либо входной, либо сгенерированный сервером)
+**Response JSON**
+```json
+{
+  "ok": false,
+  "error": "internal_error",
+  "message": "..."
+}
+```
 
-reply: string (это OperationResult.user_text и только он)
+## Output Rules
 
-Ошибки
+- HTTP adapter **must return only** `OperationResult.user_text`.
+- `OperationResult.system_log` is **never** exposed to HTTP clients.
+- Internal logs (`logs/actions.log`) continue as-is.
 
-400: если нет text или text пустой/не строка
-Response JSON:
+## Prototype Limitations (MVP)
 
-ok: false
+- No auth / roles / ACL.
+- No session persistence (restart = new sessions).
+- No streaming (single JSON response).
+- Only text input (no audio/images yet).
 
-error: "bad_request"
+## Future Extensions (non-breaking)
 
-message: "text is required"
-
-500: внутренняя ошибка
-Response JSON:
-
-ok: false
-
-error: "internal_error"
-
-message: "..."
-
-Правила вывода
-
-HTTP-адаптер всегда возвращает только USER часть: OperationResult.user_text.
-
-SYSTEM лог никогда не выдаётся наружу через /chat (даже в debug mode).
-
-Внутренние логи (actions.log и т.п.) продолжают писаться как сейчас.
-
-Прототипные ограничения (осознанно)
-
-Нет авторизации, ролей, ACL.
-
-Нет сохранения сессий на диск.
-
-Нет стриминга ответа (всё одним JSON).
-
-Нет аудио/картинок: пока только text.
-
-Расширения (позже, без ломки контракта)
-
-POST /upload (для image/audio) с возвращением file_ref
-
-POST /chat с input.type и attachments
-
-SSE / streaming endpoint для “печатания”
-
-auth: client_id -> user_id, права
+- `POST /upload` for image/audio with `file_ref` responses.
+- `POST /chat` with `input.type` and attachments.
+- SSE / streaming responses.
+- Auth: `client_id` → `user_id`, permissions.

@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 21
+- Added a minimal HTTP interface package with `/health` and `/chat` endpoints, using standard library HTTP server and per-client sessions.
+- Added HTTP runner scripts (`http.sh`, `httpw.bat`) and documented the HTTP adapter in a structured Markdown spec.
+- Added a non-critical doctor check for `ZSUS_HTTP_PORT` validity to catch bad env values.
+
 # 20
 - Added root-level VPS helper scripts (`boot.sh`, `update.sh`, `cli.sh`, `doctor.sh`) to streamline Ubuntu 24.04 prototype deployments.
 - Scripted bootstrap, update, CLI execution, and environment health checks with minimal dependencies and clear failure signaling.
