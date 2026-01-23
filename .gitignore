@@ -9,8 +9,14 @@ storages/
 
 # logs
 *.log
-!logs/
-!logs/actions.log
+logs/
+
 .vscode/extensions.json
 notes.txt
-*.log
+
+src/.egg-info/
+*.egg-info/
+pycache/
+
+
+

@@ -30,6 +30,9 @@ curl http://127.0.0.1:8123/health
 curl -X POST http://127.0.0.1:8123/chat
  -H "Content-Type: application/json" -d '{"text":"покажи все что есть"}'
 
+
+ **“Если потрібно доступ ззовні: відкрити порт у UFW: sudo ufw allow 8123/tcp”**
+
 # VPS quick scripts (Ubuntu 24.04, prototype-friendly)
 
 - Bootstrap (creates `.venv`, installs deps, copies `.env` if missing):
