@@ -41,10 +41,12 @@ sudo apt install -y git python3 python3-venv unzip
 mkdir -p ~/zsus
 cd ~
 git clone -b НАЗВА_ГІЛКИ --single-branch URL_РЕПОЗИТОРІЮ zsus
+
+
 cd ~/zsus
 
 Приклад:
-git clone -b main --single-branch https://github.com/you/zsus.git
+git clone -b dev --single-branch https://github.com/SuperflightMax/zsus zsus
  zsus
 
 Варіант Б — якщо репозиторій уже є:
