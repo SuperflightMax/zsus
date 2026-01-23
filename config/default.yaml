@@ -14,13 +14,12 @@ cli:
     - "exit"
     - "quit"
   table_max_width: 24
+  show_system_llm: false
 storage:
   backend: "sqlite"
   sqlite_filename: "storage.db"
 logging:
   level: "INFO"
-llm:
-  enabled: true
 media:
   store_images: true
   store_audio: true

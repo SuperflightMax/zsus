@@ -1,5 +1,33 @@
 # last change always at the top here (under this line)
 
+# 18
+- Escaped JSON examples in the LLM operator prompt template to prevent format-time KeyError when rendering dialogue context prompts.
+
+# 17
+- Added CLI-scoped dialogue context memory that is sent with each LLM request and cleared after completion when need_more_info is false.
+- Included the dialogue context in CLI SYSTEM output for traceability and updated LLM design documentation.
+
+# 16
+- Added CLI admin commands `+outsystemshow`/`+outsystemhide` (`+oss`/`+osh`) to toggle SYSTEM output for LLM responses without affecting admin/core output.
+- Added `cli.show_system_llm` default config (false) and documented the new CLI behavior.
+
+# 15
+- Escaped literal braces in operator prompt template to prevent Python format errors during LLM prompt rendering.
+
+# 14
+- Added OpenAI-powered LLM operator pipeline with strict JSON parsing, snapshot context, command execution tracing, and action journal logging for CLI debug runs.
+- Added operator prompts and CLI routing updates so natural language goes through the LLM while admin commands and JSON passthrough remain unchanged.
+- Updated docs (README, CLI, MVP, ROADMAP) to reflect the new LLM dialog behavior and quick-start instructions.
+
+# 13
+- Added `DEFAULT_STORAGE` support for CLI startup to auto-activate an existing storage from `.env` and documented the behavior.
+- Removed the LLM enable/disable switch so the interpreter always runs, and trimmed related config/env toggles.
+
+# 12
+- Unified command responses under `OperationResult` with explicit `ok`, `user_text`, `system_log`, and `data`, and updated CLI to print separated SYSTEM/USER blocks with structured logs.
+- Centralized defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and applied them via a policy layer before the core engine, plus standardized user-facing error texts without raises/prints.
+- Added a minimal policy hook to vet commands and prepare for future LLM-aware checks.
+
 # 11
 - Added admin command aliases (`+ls`, `+li`, `+as`) for listing storages, listing items, and activating a storage.
 - Added `cliw.bat` to bootstrap a virtual environment and run the CLI on Windows.

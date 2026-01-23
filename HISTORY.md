@@ -1,5 +1,36 @@
 # last change always at the top here (under this line)
 
+# 18
+- Escaped JSON examples in the LLM operator prompt template to avoid format errors after adding dialogue context formatting.
+
+# 17
+- Added in-memory dialogue context tracking in CLI sessions and passed it to LLM requests for short follow-up replies.
+- Logged the exact dialogue context in the CLI SYSTEM output alongside snapshots for debugging.
+- Documented the dialogue context lifecycle (retain on need_more_info, clear on completion) in LLM design notes.
+
+# 16
+- Added CLI admin toggles `+outsystemshow`/`+outsystemhide` (`+oss`/`+osh`) to control SYSTEM output visibility for LLM responses only, leaving admin and core outputs unchanged.
+- Added `cli.show_system_llm` config default (false) and documented the new behavior in CLI docs.
+
+# 15
+- Escaped literal braces in the operator user prompt template to avoid format-time KeyError when rendering LLM prompts.
+
+# 14
+- Implemented OpenAI-backed LLM operator pipeline for CLI: builds a snapshot via core list, formats operator prompts, calls OpenAI, strictly parses/validates JSON, and returns assistant text plus command list or clarification questions.
+- Added minimal OpenAI client with timeout and single retry on 429/5xx, plus explicit SYSTEM logging of model usage and key presence without leaking the key.
+- Integrated LLM flow into CLI for non-admin, non-JSON input, emitting full SYSTEM traces (snapshot, raw/parsed LLM JSON, commands, core results) and USER Ukrainian responses.
+- Added append-only action journal at `logs/actions.log` with one JSON line per executed command for later audits.
+- Added operator prompts and updated README/CLI/MVP/ROADMAP docs to align with dialog-capable LLM usage and quick-start instructions.
+
+# 13
+- CLI now reads `DEFAULT_STORAGE` from `.env` on startup, activating the storage if it exists and logging a warning if it does not.
+- Removed the LLM enable/disable flag so the interpreter always responds, and cleaned up the default config/env templates accordingly.
+
+# 12
+- Introduced `OperationResult` as the unified response object for core and interfaces, carrying `ok`, `user_text`, `system_log`, and `data`, and refactored the CLI to render distinct `-------- SYSTEM:` / `-------- USER:` blocks.
+- Centralized command defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and routed all incoming commands through a policy layer that applies defaults, validates required fields, and returns structured failures without raising for user scenarios.
+- Added tests for the new result shape, policy defaults, and updated expectation matcher to support the new `ok` contract while preserving partial data checks.
+
 # 11
 - Added short admin aliases `+ls` (list storages), `+li` (list items of active storage), and `+as` (activate storage) to reduce typing in the CLI.
 - Added a Windows helper script `cliw.bat` that creates/activates `.venv` and runs `python -m src.interfaces.cli.main` from the repository root.
