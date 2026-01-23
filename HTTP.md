@@ -34,7 +34,7 @@ Prototype constraints are explicit and intentional: no auth, no persistence, ser
 { "ok": true }
 ```
 
-### `POST /chat`
+### `POST /api/chat`
 
 **Purpose:** send a user message and receive assistant reply.
 
@@ -54,6 +54,10 @@ Prototype constraints are explicit and intentional: no auth, no persistence, ser
   "reply": "<OperationResult.user_text>"
 }
 ```
+
+### `POST /chat`
+
+**Purpose:** backward-compatible alias for `/api/chat`.
 
 ## Errors
 
@@ -91,6 +95,13 @@ Unexpected server error.
 - HTTP adapter **must return only** `OperationResult.user_text`.
 - `OperationResult.system_log` is **never** exposed to HTTP clients.
 - Internal logs (`logs/actions.log`) continue as-is.
+
+## Static Web Client
+
+The HTTP server also serves a minimal static web client from `./web`:
+
+- `GET /` -> `web/index.html`
+- `GET /web/*` -> static assets (js/css)
 
 ## Prototype Limitations (MVP)
 

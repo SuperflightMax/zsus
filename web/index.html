@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ZSUS Web Client</title>
+    <link rel="stylesheet" href="/web/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <h1>ZSUS Web Client</h1>
+        <p class="app__subtitle">Простий чат для HTTP інтерфейсу</p>
+      </header>
+
+      <section class="chat" aria-live="polite" aria-label="Chat messages">
+        <ul id="messages" class="chat__messages"></ul>
+      </section>
+
+      <form id="chat-form" class="chat__form" autocomplete="off">
+        <input
+          id="message-input"
+          type="text"
+          placeholder="Напиши повідомлення…"
+          aria-label="Message"
+          required
+        />
+        <button id="send-button" type="submit">Send</button>
+      </form>
+    </main>
+
+    <script src="/web/app.js"></script>
+  </body>
+</html>

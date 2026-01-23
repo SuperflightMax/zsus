@@ -1,5 +1,14 @@
 # last change always at the top here (under this line)
 
+# 23
+- Fixed SQLite backend usage for threaded HTTP requests by allowing cross-thread connections and serializing access per storage.
+- Added chat UI auto-scroll after responses and error updates to keep the latest message visible.
+
+# 22
+- Added built-in static web client assets (`/web`) and served them from the HTTP server, with `/` loading the chat UI.
+- Added `/api/chat` as the primary HTTP endpoint while keeping `/chat` as a backward-compatible alias, including static content types and safe path handling.
+- Updated Windows HTTP helper to open the root URL and refreshed HTTP documentation to cover the new web client routes.
+
 # 21
 - Added a minimal HTTP interface package with `/health` and `/chat` endpoints, using standard library HTTP server and per-client sessions.
 - Added HTTP runner scripts (`http.sh`, `httpw.bat`) and documented the HTTP adapter in a structured Markdown spec.
