@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 20
+- Added root-level VPS helper scripts (`boot.sh`, `update.sh`, `cli.sh`, `doctor.sh`) to streamline Ubuntu 24.04 prototype deployments.
+- Scripted bootstrap, update, CLI execution, and environment health checks with minimal dependencies and clear failure signaling.
+- Documented the new operational flow in OPERATIONS.md.
+
 # 19
 - Added session layer (ChatSession + SessionManager) to centralize LLM dialogue context and command execution for client-agnostic interfaces.
 - Refactored CLI to delegate normal text handling to ChatSession while keeping admin commands, scenario runner, and output formatting unchanged.
