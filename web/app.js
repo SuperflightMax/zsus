@@ -22,7 +22,6 @@ function appendMessage(text, type) {
   item.className = `message message--${type}`;
   item.textContent = text;
   messages.appendChild(item);
-  scrollToBottom();
   return item;
 }
 
@@ -32,8 +31,20 @@ function setBusy(isBusy) {
 }
 
 function scrollToBottom() {
-  messages.scrollTop = messages.scrollHeight;
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight;
+  });
 }
+
+const observer = new MutationObserver(() => {
+  scrollToBottom();
+});
+
+observer.observe(messages, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
 
 async function sendMessage(text) {
   setBusy(true);

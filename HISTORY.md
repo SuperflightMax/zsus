@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 24
+- Made chat auto-scroll fire on every DOM update so the latest message is always fully visible.
+
 # 23
 - Fixed SQLite backend usage for threaded HTTP requests by allowing cross-thread connections and serializing access per storage.
 - Added chat UI auto-scroll after responses and error updates to keep the latest message visible.
