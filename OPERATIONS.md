@@ -10,6 +10,17 @@
 4. Activate a storage (example):
    - `+activatestorage test_storage`
 
+# VPS quick scripts (Ubuntu 24.04, prototype-friendly)
+
+- Bootstrap (creates `.venv`, installs deps, copies `.env` if missing):
+  - `./boot.sh`
+- Update from git + reinstall + log deploy:
+  - `./update.sh`
+- Run CLI (passes through args):
+  - `./cli.sh --help`
+- Check environment health:
+  - `./doctor.sh`
+
 Sample queries (UA/RU/surzhyk):
 - “що є на складі?”
 - “де всі каністри?”

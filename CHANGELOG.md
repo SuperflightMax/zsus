@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 20
+- Added root-level VPS helper scripts (boot, update, CLI, doctor) for Ubuntu 24.04 prototype deployments.
+- Documented the new scripts in OPERATIONS.md.
+
 # 19
 - Introduced session layer (ChatSession + SessionManager) to handle LLM dialogue context and command execution for client-agnostic interfaces.
 - Updated CLI to use ChatSession for normal text input while preserving admin commands and output formatting.
