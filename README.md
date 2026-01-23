@@ -7,6 +7,7 @@ Storage Bot Core — это движок учёта складов с интел
 
 ## OBEY:
 
+   **MANIFEST.md** - principles of development. 
    **GUIDE.md** - guielines, istructions, rules for coding.
 
 ## **MUST FOLLOW:** 
@@ -16,36 +17,17 @@ Storage Bot Core — это движок учёта складов с интел
    **DESIGN.md** - описание системы, основные принципы, цели
    **ARCHITECTURE.md** - принципы разработки, структура кода
    **LLM_DESIGN.md** - принципы использования LLM
-   **MVP.md** - ограничения и принципы MVP - текущего этапа разработки
-   **ROADMAP.md** - этапы разработки 
+   **CLIENTS.md** - принцип подключения клиентов
 
      ... and UPDATE WHEN NECESSARY
 
    **COMMANDS.md** - команды ядра
    **TESTS.md** - формат тестов и сценариев
    **CLI.md** - команды базового CLI 
+   **OPERATIONS.md** - инструкции по запуску, проверкам, развертіванию и т.д.
 
 ## **MUST UPDATE with each PR**
 
    **HISTORY.md** - подробное описание изменений 
    **CHANGELOG.md** - журнал изменений, краткие описания 
 
-# Quick run (local CLI + LLM)
-
-1. Copy env template:
-   - `cp env.example .env`
-2. Set OpenAI credentials in `.env`:
-   - `OPENAI_API_KEY=...`
-   - `OPENAI_MODEL=gpt-4.1` (or another available model)
-3. Run the CLI:
-   - `python -m src.interfaces.cli.main`
-4. Activate a storage (example):
-   - `+activatestorage test_storage`
-
-Sample queries (UA/RU/surzhyk):
-- “що є на складі?”
-- “де всі каністри?”
-- “я забрав усі фляги”
-- “поклади всі бинти в аптечку”
-- “додай 5 рукавиць на склад”
-- “медичне що є?”
