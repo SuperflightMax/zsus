@@ -20,3 +20,5 @@ pycache/
 
 
 
+/logs
+*.log
