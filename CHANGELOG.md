@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 22
+- Added a built-in static web client served by the HTTP server at `/` and `/web/*`.
+- Added `/api/chat` as the primary HTTP endpoint while keeping `/chat` as a compatibility alias.
+- Updated `httpw.bat` and HTTP documentation to reflect the new web client routing.
+
 # 21
 - Added a minimal HTTP interface (`/health`, `/chat`) using the standard library HTTP server and per-client sessions.
 - Added `http.sh` and `httpw.bat` helpers for launching the HTTP adapter.

@@ -6,7 +6,9 @@ import json
 import logging
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from ...core.engine import set_default_backend
@@ -17,6 +19,7 @@ from ...session import SessionManager
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8123
+WEB_ROOT = Path(__file__).resolve().parents[3] / "web"
 
 
 class ChatHandler(BaseHTTPRequestHandler):
@@ -25,14 +28,25 @@ class ChatHandler(BaseHTTPRequestHandler):
     server_version = "zsus-http/0.1"
 
     def do_GET(self) -> None:  # noqa: N802
-        if self.path != "/health":
-            self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
+        path = urlparse(self.path).path
+        if path == "/health":
+            self._send_json(200, {"ok": True})
             return
 
-        self._send_json(200, {"ok": True})
+        if path == "/":
+            self._send_file(WEB_ROOT / "index.html")
+            return
+
+        if path == "/web" or path.startswith("/web/"):
+            rel_path = path[len("/web") :]
+            self._send_static(rel_path)
+            return
+
+        self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path != "/chat":
+        path = urlparse(self.path).path
+        if path not in ("/chat", "/api/chat"):
             self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
             return
 
@@ -59,7 +73,7 @@ class ChatHandler(BaseHTTPRequestHandler):
             response = {"ok": True, "client_id": client_id, "reply": result.user_text}
             self._send_json(200, response)
         except Exception as exc:  # noqa: BLE001
-            logging.exception("Unhandled error in /chat")
+            logging.exception("Unhandled error in %s", path)
             self._send_json(500, {"ok": False, "error": "internal_error", "message": str(exc)})
 
     def _read_json(self) -> Dict[str, Any]:
@@ -90,6 +104,48 @@ class ChatHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_static(self, raw_path: str) -> None:
+        rel_path = raw_path.lstrip("/")
+        if rel_path in ("", "/"):
+            rel_path = "index.html"
+        if rel_path.endswith("/"):
+            rel_path = f"{rel_path}index.html"
+
+        candidate = (WEB_ROOT / rel_path).resolve()
+        try:
+            candidate.relative_to(WEB_ROOT)
+        except ValueError:
+            self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
+            return
+
+        if not candidate.is_file():
+            self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
+            return
+
+        self._send_file(candidate)
+
+    def _send_file(self, path: Path) -> None:
+        if not path.exists() or not path.is_file():
+            self._send_json(404, {"ok": False, "error": "not_found", "message": "not found"})
+            return
+
+        content_type = self._content_type(path.suffix.lower())
+        data = path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _content_type(self, suffix: str) -> str:
+        if suffix == ".html":
+            return "text/html; charset=utf-8"
+        if suffix == ".js":
+            return "text/javascript; charset=utf-8"
+        if suffix == ".css":
+            return "text/css; charset=utf-8"
+        return "application/octet-stream"
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
         logging.info("%s - %s", self.address_string(), format % args)
