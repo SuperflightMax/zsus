@@ -84,6 +84,19 @@ Flow:
 3) result = session.handle_text(text)
 4) display result.user_text only
 
+## HTTP interface (MVP)
+
+Проект предоставляет простой HTTP-адаптер, который является еще одним “интерфейсом”, как CLI.
+детальные спецификации описаны в HTTP.md
+
+HTTP-слой не реализует диалоговый контекст: он только получает client_id и делегирует работу в SessionManager/ChatSession.
+Любой пользовательский клиент через HTTP получает ТОЛЬКО OperationResult.user_text.
+
+client_id rule
+client_id используется для изоляции контекста между пользователями.
+Если client_id отсутствует (первый запрос), сервер генерирует новый client_id и возвращает его клиенту.
+Клиент обязан сохранить этот client_id (localStorage / файл / память приложения) и передавать во всех следующих запросах.
+
 ## Future (not in MVP)
 - auth / roles / permissions: SessionManager maps client_id -> user_id -> permissions
 - attachments: upload -> file_ref -> session.handle_input(type=image/audio, file_ref=...)

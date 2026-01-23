@@ -10,6 +10,26 @@
 4. Activate a storage (example):
    - `+activatestorage test_storage`
 
+# Запуск HTTP-сервера (прототип)
+
+HTTP сервер поднимается самим проектом на отдельном порту (по умолчанию 8123).
+
+Конфиг порта опционально через .env:
+
+ZSUS_HTTP_HOST=0.0.0.0
+ZSUS_HTTP_PORT=8123
+
+Запуск:
+cd ~/zsus
+bash http.sh
+
+Проверка:
+curl http://127.0.0.1:8123/health
+
+Пример запроса:
+curl -X POST http://127.0.0.1:8123/chat
+ -H "Content-Type: application/json" -d '{"text":"покажи все что есть"}'
+
 # VPS quick scripts (Ubuntu 24.04, prototype-friendly)
 
 - Bootstrap (creates `.venv`, installs deps, copies `.env` if missing):
