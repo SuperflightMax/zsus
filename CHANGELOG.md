@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 25
+- Fixed web chat auto-scroll to target the scrollable chat container so new messages stay in view after user input and async replies.
+
 
 # 24
 - Made chat auto-scroll fire on every DOM update so the latest message is always visible.
