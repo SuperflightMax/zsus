@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 23
+- Fixed the web client auto-scroll behavior to target the chat container (the element with overflow scrolling), ensuring new messages stay visible.
+- Ensured auto-scroll triggers after user messages, pending placeholders, and async bot replies to keep the chat view pinned to the latest entry.
+
 # 22
 - Added built-in static web client assets (`/web`) and served them from the HTTP server, with `/` loading the chat UI.
 - Added `/api/chat` as the primary HTTP endpoint while keeping `/chat` as a backward-compatible alias, including static content types and safe path handling.
