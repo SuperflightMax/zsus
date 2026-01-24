@@ -2,6 +2,7 @@ const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const sendButton = document.getElementById("send-button");
 const messages = document.getElementById("messages");
+const chat = document.querySelector(".chat");
 
 const params = new URLSearchParams(window.location.search);
 const userId = params.get("user_id");
@@ -22,7 +23,11 @@ function appendMessage(text, type) {
   item.className = `message message--${type}`;
   item.textContent = text;
   messages.appendChild(item);
-  messages.scrollTop = messages.scrollHeight;
+  if (chat) {
+    requestAnimationFrame(() => {
+      chat.scrollTop = chat.scrollHeight;
+    });
+  }
   return item;
 }
 

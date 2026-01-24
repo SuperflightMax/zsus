@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 23
+- Fixed web chat auto-scroll to target the actual scroll container so new messages stay visible after user sends and bot replies.
+
 # 22
 - Added a built-in static web client served by the HTTP server at `/` and `/web/*`.
 - Added `/api/chat` as the primary HTTP endpoint while keeping `/chat` as a compatibility alias.
