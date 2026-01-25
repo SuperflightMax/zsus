@@ -103,12 +103,40 @@ The HTTP server also serves a minimal static web client from `./web`:
 - `GET /` -> `web/index.html`
 - `GET /web/*` -> static assets (js/css)
 
+## GET /api/config
+
+Возвращает клиентские флаги/настройки. Нужен для web/apk клиентов.
+
+Request:
+
+```
+GET /api/config
+```
+
+Response (пример):
+```
+{
+  "ok": true,
+  "client": {
+    "audio_web_speech_enabled": true,
+    "client_another_option": true,
+  }
+}
+```
+### Env overrides
+
+Значения берутся из дефолтов и могут быть переопределены через .env (пример):
+
+AUDIO_WEB_SPEECH_ENABLED=trues
+
+Правила:
+boolean-поля принимают: 1/0, true/false, yes/no (case-insensitive)
+
 ## Prototype Limitations (MVP)
 
 - No auth / roles / ACL.
 - No session persistence (restart = new sessions).
 - No streaming (single JSON response).
-- Only text input (no audio/images yet).
 
 ## Future Extensions (non-breaking)
 

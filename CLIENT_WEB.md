@@ -34,6 +34,8 @@
 - `client_id: string` (повертається завжди при `ok:true`)
 - `reply: string` (відповідь бота, тільки USER)
 
+Вебклиент использует относительные пути (api/chat, api/config, web/*), чтобы корректно работать при хостинге в подпапке (например /zsus/) за reverse proxy.
+
 ## client_id / user_id правило
 
 Клієнт зберігає `client_id` у localStorage.
@@ -68,3 +70,44 @@ Enter -> відправити.
 - якщо сервер недоступний або `ok:false` -> показати короткий рядок помилки в чаті.
 
 Без форматування markdown, просто текст.
+
+
+## Voice input (Web Speech)
+
+Вебклиент поддерживает голосовой ввод через Web Speech API (SpeechRecognition).
+
+### Поведение:
+
+Кнопка 🎤 показывается только если audio_web_speech_enabled=true (из /api/config) и браузер поддерживает SpeechRecognition.
+
+### UX: hold-to-talk:
+
+нажал и удерживаешь → идёт распознавание
+отпустил (или достигли лимита времени) → распознавание останавливается
+
+Язык распознавания: audio_web_speech_lang (default: uk-UA)
+Максимальная длительность удержания: audio_web_speech_max_seconds (default: 30)
+
+Если audio_autosend=true:
+после распознавания текст автоматически отправляется как обычное сообщение
+
+Если audio_autosend=false:
+текст вставляется в поле ввода, пользователь отправляет вручную
+
+### Ошибки доступа к микрофону:
+
+До первого отказа (“Deny”) ничего не показываем.
+Если пользователь нажал Deny — показываем подсказку 1 раз (и не спамим дальше).
+
+### overrrides
+
+Значения берутся из дефолтов и могут быть переопределены через .env:
+
+AUDIO_WEB_SPEECH_ENABLED (default: true)
+AUDIO_AUTOSEND (default: true)
+AUDIO_WEB_SPEECH_LANG (default: uk-UA)
+AUDIO_WEB_SPEECH_MAX_SECONDS (default: 30)
+
+Правила:
+AUDIO_WEB_SPEECH_MAX_SECONDS валидируется (например 10..120), иначе fallback на default
+

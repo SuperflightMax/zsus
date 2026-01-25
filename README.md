@@ -19,6 +19,7 @@ Storage Bot Core — это движок учёта складов с интел
    **LLM_DESIGN.md** - принципы использования LLM
    **CLIENTS.md** - принцип подключения клиентов
    **HTTP.md** - спецификация для http подключения
+   **CLIENT_WEB.md** - built-in web client
 
      ... and UPDATE WHEN NECESSARY
 
