@@ -20,6 +20,13 @@ from ...session import SessionManager
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8123
 WEB_ROOT = Path(__file__).resolve().parents[3] / "web"
+CLIENT_CONFIG_DEFAULTS = {
+    "audio_web_speech_enabled": True,
+    "audio_autosend": True,
+    "audio_web_speech_lang": "uk-UA",
+    "audio_web_speech_max_seconds": 30,
+}
+CLIENT_MAX_SECONDS_RANGE = (5, 120)
 
 
 class ChatHandler(BaseHTTPRequestHandler):
@@ -31,6 +38,9 @@ class ChatHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/health":
             self._send_json(200, {"ok": True})
+            return
+        if path == "/api/config":
+            self._send_json(200, {"ok": True, "client": _get_client_config()})
             return
 
         if path == "/":
@@ -184,6 +194,53 @@ def _resolve_port(raw_port: Optional[str]) -> int:
     if port < 1 or port > 65535:
         raise ValueError("ZSUS_HTTP_PORT must be between 1 and 65535")
     return port
+
+
+def _parse_bool_env(value: Optional[str], default: bool) -> bool:
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes"}:
+        return True
+    if normalized in {"0", "false", "no"}:
+        return False
+    return default
+
+
+def _parse_int_range(value: Optional[str], default: int, minimum: int, maximum: int) -> int:
+    if value is None:
+        return default
+    try:
+        parsed = int(value.strip())
+    except ValueError:
+        return default
+    if parsed < minimum or parsed > maximum:
+        return default
+    return parsed
+
+
+def _get_client_config() -> Dict[str, Any]:
+    min_seconds, max_seconds = CLIENT_MAX_SECONDS_RANGE
+    return {
+        "audio_web_speech_enabled": _parse_bool_env(
+            os.getenv("AUDIO_WEB_SPEECH_ENABLED"),
+            CLIENT_CONFIG_DEFAULTS["audio_web_speech_enabled"],
+        ),
+        "audio_autosend": _parse_bool_env(
+            os.getenv("AUDIO_AUTOSEND"),
+            CLIENT_CONFIG_DEFAULTS["audio_autosend"],
+        ),
+        "audio_web_speech_lang": os.getenv(
+            "AUDIO_WEB_SPEECH_LANG",
+            CLIENT_CONFIG_DEFAULTS["audio_web_speech_lang"],
+        ),
+        "audio_web_speech_max_seconds": _parse_int_range(
+            os.getenv("AUDIO_WEB_SPEECH_MAX_SECONDS"),
+            CLIENT_CONFIG_DEFAULTS["audio_web_speech_max_seconds"],
+            min_seconds,
+            max_seconds,
+        ),
+    }
 
 
 def run() -> None:

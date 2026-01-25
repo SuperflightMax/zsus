@@ -113,3 +113,44 @@ body {
   background: #94a3b8;
   cursor: not-allowed;
 }
+
+.mic-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.mic-button {
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  border: none;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-size: 32px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.mic-button:active,
+.mic-button.is-listening {
+  transform: scale(0.96);
+  background: #0f172a;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3);
+}
+
+.mic-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.mic-warning {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+  text-align: center;
+  max-width: 320px;
+}

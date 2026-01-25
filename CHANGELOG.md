@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 27
+- Added `/api/config` with environment-driven client flags and safe parsing for web speech defaults.
+- Added web client Web Speech hold-to-talk mic UI with autosend toggle, permission-deny messaging, and config fetch.
+
 # 26
 - Switched web client asset and API paths to relative URLs so the UI works from the root or a reverse-proxy subpath.
 
