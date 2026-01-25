@@ -39,6 +39,14 @@ curl -X POST http://127.0.0.1:8123/chat
   - `./boot.sh`
 - Update from git + reinstall + log deploy:
   - `./update.sh`
+- Start HTTP server in background with PID/logs:
+  - `./start.sh`
+- Stop HTTP server:
+  - `./stop.sh`
+- Restart HTTP server:
+  - `./restart.sh`
+- Check HTTP server status:
+  - `./status.sh`
 - Run CLI (passes through args):
   - `./cli.sh --help`
 - Check environment health:
@@ -128,6 +136,7 @@ update.sh:
 виконує git pull --rebase
 перевстановлює залежності
 записує дату та git hash у logs/deploy.log
+якщо HTTP сервер працює, зупиняє його перед оновленням і запускає після (можна вимкнути через ZSUS_NO_RESTART=1)
 
 ## Логи
 

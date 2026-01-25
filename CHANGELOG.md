@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 29
+- Added VPS-friendly HTTP server lifecycle scripts with PID/log handling.
+- Updated `update.sh` to stop and restart the HTTP server around updates unless opted out.
+- Documented the new VPS scripts and update behavior in operations guide.
+
 # 28
 - Polished web mic UX: request mic permission on load, prevent long-press selection menu, show listening placeholder, and add a hold-to-talk hint.
 
@@ -66,11 +71,6 @@
 # 12
 - Unified command responses under `OperationResult` with explicit `ok`, `user_text`, `system_log`, and `data`, and updated CLI to print separated SYSTEM/USER blocks with structured logs.
 - Centralized defaults (`DEFAULT_QTY`, `DEFAULT_LOCATION`) and applied them via a policy layer before the core engine, plus standardized user-facing error texts without raises/prints.
-- Added a minimal policy hook to vet commands and prepare for future LLM-aware checks.
-
-# 11
-- Added admin command aliases (`+ls`, `+li`, `+as`) for listing storages, listing items, and activating a storage.
-- Added `cliw.bat` to bootstrap a virtual environment and run the CLI on Windows.
 
 # 10
 - Added SQLite storage backend that mirrors in-memory semantics while persisting state with per-storage database files inside each storage directory.

@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 29
+- Added VPS-friendly HTTP server lifecycle scripts (`start.sh`, `stop.sh`, `restart.sh`, `status.sh`) with PID/log handling and status reporting.
+- Updated `update.sh` to stop and restart the HTTP server automatically during updates unless opt-out is set.
+- Documented new VPS scripts and update behavior in operations guide.
+
 # 28
 - Requested microphone permission on web client load to make voice input UX smoother.
 - Prevented long-press selection on the mic button and added a “listening...” placeholder plus a hold-to-talk hint below the mic UI.
