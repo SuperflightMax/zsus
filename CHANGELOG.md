@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 30
+- Prevented the web client from refocusing the text input after voice autosend, avoiding mobile keyboard pop-ups during voice input.
+
 # 29
 - Added VPS-friendly HTTP server lifecycle scripts with PID/log handling.
 - Updated `update.sh` to stop and restart the HTTP server around updates unless opted out.

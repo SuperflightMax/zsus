@@ -72,7 +72,7 @@ observer.observe(messages, {
   characterData: true,
 });
 
-async function sendMessage(text) {
+async function sendMessage(text, options = {}) {
   setBusy(true);
   appendMessage(text, "user");
   const pending = appendMessage("…", "bot message--pending");
@@ -115,6 +115,10 @@ async function sendMessage(text) {
 
   } finally {
     setBusy(false);
+    if (options.suppressFocus) {
+      input.blur();
+      return;
+    }
     input.focus();
   }
 }
@@ -218,7 +222,7 @@ function startRecognition() {
       return;
     }
     if (clientConfig.audio_autosend) {
-      sendMessage(finalText);
+      sendMessage(finalText, { suppressFocus: true });
     } else {
       const current = input.value.trim();
       input.value = current ? `${current} ${finalText}` : finalText;
