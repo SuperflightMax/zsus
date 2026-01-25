@@ -130,6 +130,10 @@ body {
   color: #ffffff;
   font-size: 32px;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
   transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -153,4 +157,11 @@ body {
   color: #b91c1c;
   text-align: center;
   max-width: 320px;
+}
+
+.mic-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  text-transform: lowercase;
 }

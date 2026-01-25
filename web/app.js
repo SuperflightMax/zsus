@@ -6,6 +6,7 @@ const chat = document.querySelector(".chat");
 const micArea = document.getElementById("mic-area");
 const micButton = document.getElementById("mic-button");
 const micWarning = document.getElementById("mic-warning");
+const defaultInputPlaceholder = input ? input.placeholder : "";
 
 const params = new URLSearchParams(window.location.search);
 const userId = params.get("user_id");
@@ -22,6 +23,7 @@ const SpeechRecognition =
 let recognition = null;
 let recognitionTimer = null;
 let isListening = false;
+let isShowingListeningPlaceholder = false;
 
 if (userId && userId.trim()) {
   clientId = userId.trim();
@@ -169,8 +171,28 @@ function cleanupRecognition() {
   if (micButton) {
     micButton.classList.remove("is-listening");
   }
+  setListeningPlaceholder(false);
   recognition = null;
   isListening = false;
+}
+
+function setListeningPlaceholder(isActive) {
+  if (!input) {
+    return;
+  }
+  if (isActive) {
+    if (isShowingListeningPlaceholder) {
+      return;
+    }
+    input.dataset.originalPlaceholder = input.placeholder;
+    input.placeholder = "listening...";
+    isShowingListeningPlaceholder = true;
+  } else if (isShowingListeningPlaceholder) {
+    input.placeholder =
+      input.dataset.originalPlaceholder || defaultInputPlaceholder;
+    delete input.dataset.originalPlaceholder;
+    isShowingListeningPlaceholder = false;
+  }
 }
 
 function startRecognition() {
@@ -223,6 +245,7 @@ function startRecognition() {
   if (micButton) {
     micButton.classList.add("is-listening");
   }
+  setListeningPlaceholder(true);
   recognition.start();
 
   const maxSeconds = clientConfig.audio_web_speech_max_seconds || 30;
@@ -241,6 +264,10 @@ function attachMicHandlers() {
     startRecognition();
   });
 
+  micButton.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
+
   ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
     micButton.addEventListener(eventName, (event) => {
       event.preventDefault();
@@ -249,6 +276,32 @@ function attachMicHandlers() {
       }
     });
   });
+}
+
+async function requestMicPermissionOnLoad() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return;
+  }
+  const shouldRequest =
+    clientConfig.audio_web_speech_enabled && Boolean(SpeechRecognition);
+  if (!shouldRequest) {
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+  } catch (error) {
+    if (
+      error &&
+      (error.name === "NotAllowedError" ||
+        error.name === "SecurityError" ||
+        error.name === "PermissionDeniedError")
+    ) {
+      showMicWarningOnce(
+        "Доступ до мікрофона заборонено. Дозвольте його в налаштуваннях браузера."
+      );
+    }
+  }
 }
 
 form.addEventListener("submit", (event) => {
@@ -271,6 +324,7 @@ input.addEventListener("keydown", (event) => {
 loadConfig().finally(() => {
   updateMicVisibility();
   attachMicHandlers();
+  requestMicPermissionOnLoad();
 });
 
 input.focus();

@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 28
+- Polished web mic UX: request mic permission on load, prevent long-press selection menu, show listening placeholder, and add a hold-to-talk hint.
+
 # 27
 - Added `/api/config` with environment-driven client flags and safe parsing for web speech defaults.
 - Added web client Web Speech hold-to-talk mic UI with autosend toggle, permission-deny messaging, and config fetch.
