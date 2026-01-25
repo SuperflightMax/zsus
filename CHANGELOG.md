@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 26
+- Switched web client asset and API paths to relative URLs so the UI works from the root or a reverse-proxy subpath.
+
 # 25
 - Fixed web chat auto-scroll to target the scrollable chat container so new messages stay in view after user input and async replies.
 
