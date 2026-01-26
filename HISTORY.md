@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 33
+- Removed the web client startup microphone permission probe so mic prompts and warnings only happen after user interaction.
+- Updated Android WebView permission handling to wait for runtime audio permission results before granting or denying audio capture, preventing false warnings.
+
 # 32
 - Removed the checked-in Gradle wrapper JAR from the Android client so it can be added locally for builds.
 

@@ -14,6 +14,7 @@ import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
     private static final int REQUEST_RECORD_AUDIO = 1001;
+    private PermissionRequest pendingPermissionRequest = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,16 +36,20 @@ public class MainActivity extends Activity {
             @Override
             public void onPermissionRequest(PermissionRequest request) {
                 runOnUiThread(() -> {
-                    if (hasAudioPermission() && requestsAudioCapture(request)) {
-                        request.grant(request.getResources());
-                    } else {
+                    if (!requestsAudioCapture(request)) {
                         request.deny();
+                        return;
                     }
+                    if (hasAudioPermission()) {
+                        request.grant(request.getResources());
+                        return;
+                    }
+                    pendingPermissionRequest = request;
+                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
                 });
             }
         });
 
-        requestAudioPermissionIfNeeded();
         webView.loadUrl(AppConfig.BASE_URL);
     }
 
@@ -53,13 +58,22 @@ public class MainActivity extends Activity {
         finish();
     }
 
-    private void requestAudioPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQUEST_RECORD_AUDIO) {
+            PermissionRequest request = pendingPermissionRequest;
+            pendingPermissionRequest = null;
+            if (request == null) {
+                return;
+            }
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                request.grant(request.getResources());
+            } else {
+                request.deny();
+            }
             return;
         }
-        if (!hasAudioPermission()) {
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
-        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private boolean hasAudioPermission() {
