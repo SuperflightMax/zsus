@@ -23,3 +23,9 @@ pycache/
 /logs
 *.log
 logs/actions.log
+
+# Android
+android/.gradle/
+android/**/build/
+android/.idea/
+*.apk

@@ -1,5 +1,12 @@
 # last change always at the top here (under this line)
 
+# 32
+- Removed the checked-in Gradle wrapper JAR from the Android client so it can be added locally for builds.
+
+# 31
+- Added a minimal Android WebView client under `/android` with a Gradle wrapper, single-activity WebView shell, and required permissions per CLIENT_ANDROID.md.
+- Documented manual Android Studio APK build steps and distribution notes in OPERATIONS.md.
+
 # 30
 - Prevented the web client from refocusing the text input after voice autosend, avoiding mobile keyboard pop-ups during voice input.
 

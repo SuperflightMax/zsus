@@ -121,6 +121,24 @@ bash doctor.sh
 cd ~/zsus
 bash cli.sh
 
+## Android client (APK)
+
+Android client lives in `/android` within this repository.
+
+Build APK using Android Studio:
+1. Open Android Studio.
+2. Open the `/android` directory as a project.
+3. Wait for Gradle sync to finish.
+4. Build APK: `Build > Build Bundle(s) / APK(s) > Build APK`.
+
+The resulting debug APK is stored under:
+`/android/app/build/outputs/apk/debug/app-debug.apk`
+
+Notes:
+- APK is installed manually.
+- Rebuild + reinstall is expected for config changes.
+- No Play Store publishing is used.
+
 
 ## Оновлення коду
 
