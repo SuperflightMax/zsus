@@ -282,32 +282,6 @@ function attachMicHandlers() {
   });
 }
 
-async function requestMicPermissionOnLoad() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    return;
-  }
-  const shouldRequest =
-    clientConfig.audio_web_speech_enabled && Boolean(SpeechRecognition);
-  if (!shouldRequest) {
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((track) => track.stop());
-  } catch (error) {
-    if (
-      error &&
-      (error.name === "NotAllowedError" ||
-        error.name === "SecurityError" ||
-        error.name === "PermissionDeniedError")
-    ) {
-      showMicWarningOnce(
-        "Доступ до мікрофона заборонено. Дозвольте його в налаштуваннях браузера."
-      );
-    }
-  }
-}
-
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const text = input.value.trim();
@@ -328,7 +302,6 @@ input.addEventListener("keydown", (event) => {
 loadConfig().finally(() => {
   updateMicVisibility();
   attachMicHandlers();
-  requestMicPermissionOnLoad();
 });
 
 input.focus();
