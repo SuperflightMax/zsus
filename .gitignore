@@ -29,3 +29,19 @@ android/.gradle/
 android/**/build/
 android/.idea/
 *.apk
+
+/android/.idea
+/android/.gradle
+/android/**/build
+
+android/local.properties (там пути к SDK, строго локально)
+android/*.iml
+android/.externalNativeBuild/
+android/.cxx/
+.idea/zsus.iml
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/modules.xml
+.idea/misc.xml
+.idea/caches/deviceStreaming.xml
+android/local.properties
