@@ -38,6 +38,8 @@ consume
 "from": "string або null (склад)"
 }}
 
+
+
 ЗАПИТ КОРИСТУВАЧА:
 {user_text}
 
