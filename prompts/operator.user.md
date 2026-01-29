@@ -8,15 +8,11 @@ SNAPSHOT (актуальний стан складу):
 
 ДОСТУПНІ КОМАНДИ CORE (коротко, щоб ти формував правильний JSON):
 
-list
-Формат:
-{{ "command": "list", "payload": {{}}, "storage_id": "ACTIVE_STORAGE" }}
-
 intake
 Додає предмети. Формат payload:
 {{
 "items": [
-{{ "item_id": "string", "qty": 1, "unit": "string (необов'язково)", "location": "string або null (склад)" }}
+{{ "item_id": "string", "qty": 1, "unit": "string", "location": "string або null (склад)" }}
 ]
 }}
 storage_id завжди ACTIVE_STORAGE.
@@ -38,7 +34,7 @@ consume
 "from": "string або null (склад)"
 }}
 
-
+qty — число, може бути дробовим.
 
 ЗАПИТ КОРИСТУВАЧА:
 {user_text}
