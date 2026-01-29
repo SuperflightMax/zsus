@@ -48,7 +48,7 @@
         }
       },
       "expect": {
-        "total_qty": 200
+        "total_qty": 200.0
       }
     }
   ]

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.engine import handle_command
+from ..core.formatting import format_quantity
 from .openai_client import OpenAIClient
 
 ALLOWED_COMMANDS = {"list", "intake", "move", "consume"}
@@ -30,7 +31,7 @@ class LLMResult:
 class SnapshotResult:
     ok: bool
     snapshot_text: str
-    snapshot_json: Optional[Dict[str, Dict[str, int]]] = None
+    snapshot_json: Optional[Dict[str, Dict[str, Dict[str, Any]]]] = None
     system_log: List[str] = None
 
 
@@ -223,19 +224,21 @@ class LLMOperator:
 
 
 def _render_snapshot_table(
-    snapshot: Dict[str, Dict[str, int]],
+    snapshot: Dict[str, Dict[str, Dict[str, Any]]],
     max_rows: int,
 ) -> Tuple[str, int, int]:
     if not snapshot:
         return "(склад порожній)", 0, 0
 
-    rows: List[Tuple[str, str, int]] = []
+    rows: List[Tuple[str, str, str, str]] = []
     for item_id in sorted(snapshot.keys()):
         locations = snapshot[item_id]
         for location_key in sorted(locations.keys()):
-            qty = locations[location_key]
+            entry = locations[location_key]
+            qty = entry.get("qty")
+            unit = entry.get("unit", "")
             location_name = "склад" if location_key == "null" else str(location_key)
-            rows.append((str(item_id), location_name, qty))
+            rows.append((str(item_id), location_name, format_quantity(float(qty)), str(unit)))
 
     total_rows = len(rows)
     truncated = 0
@@ -245,13 +248,14 @@ def _render_snapshot_table(
 
     item_width = max(len("Item"), max((len(row[0]) for row in rows), default=0))
     location_width = max(len("Location"), max((len(row[1]) for row in rows), default=0))
-    qty_width = max(len("Qty"), max((len(str(row[2])) for row in rows), default=0))
+    qty_width = max(len("Qty"), max((len(row[2]) for row in rows), default=0))
+    unit_width = max(len("Unit"), max((len(row[3]) for row in rows), default=0))
 
-    header = f"{'Item':<{item_width}} | {'Location':<{location_width}} | {'Qty':>{qty_width}}"
-    separator = f"{'-' * item_width}-+-{'-' * location_width}-+-{'-' * qty_width}"
+    header = f"{'Item':<{item_width}} | {'Location':<{location_width}} | {'Qty':>{qty_width}} | {'Unit':<{unit_width}}"
+    separator = f"{'-' * item_width}-+-{'-' * location_width}-+-{'-' * qty_width}-+-{'-' * unit_width}"
     lines = [header, separator]
-    for item, location, qty in rows:
-        lines.append(f"{item:<{item_width}} | {location:<{location_width}} | {qty:>{qty_width}}")
+    for item, location, qty, unit in rows:
+        lines.append(f"{item:<{item_width}} | {location:<{location_width}} | {qty:>{qty_width}} | {unit:<{unit_width}}")
 
     if truncated:
         lines.append(f"...ще {truncated} рядків")

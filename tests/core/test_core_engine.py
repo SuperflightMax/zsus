@@ -35,7 +35,7 @@ def test_intake_single_item_new(engine: CoreEngine, backend: InMemoryStorageBack
 
     assert response.ok is True
     assert response.data == {}
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 3}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 3.0, "unit": "од"}}}
 
 
 def test_intake_multiple_items(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -54,8 +54,8 @@ def test_intake_multiple_items(engine: CoreEngine, backend: InMemoryStorageBacke
 
     assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {
-        "radio": {None: 3},
-        "battery": {"box": 5},
+        "radio": {None: {"qty": 3.0, "unit": "од"}},
+        "battery": {"box": {"qty": 5.0, "unit": "од"}},
     }
 
 
@@ -70,7 +70,7 @@ def test_intake_same_item_twice(engine: CoreEngine, backend: InMemoryStorageBack
 
     assert first.ok is True
     assert second.ok is True
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 4}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 4.0, "unit": "од"}}}
 
 
 def test_intake_invalid_qty(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -107,7 +107,7 @@ def test_move_between_locations(engine: CoreEngine, backend: InMemoryStorageBack
 
     assert response.ok is True
     assert backend.get_storage_snapshot(storage_id) == {
-        "radio": {None: 3, "box_1": 2},
+        "radio": {None: {"qty": 3.0, "unit": "од"}, "box_1": {"qty": 2.0, "unit": "од"}},
     }
 
 
@@ -166,7 +166,7 @@ def test_consume_from_location(engine: CoreEngine, backend: InMemoryStorageBacke
     )
 
     assert response.ok is True
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": 3}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": {"qty": 3.0, "unit": "од"}}}
 
 
 def test_consume_all_qty_removes_location(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -212,6 +212,64 @@ def test_consume_not_enough_qty(engine: CoreEngine, backend: InMemoryStorageBack
     assert backend.get_storage_snapshot(storage_id) == before
 
 
+def test_fractional_qty_and_unit(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    intake_response = engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "fuel", "qty": 1.5, "unit": "л", "location": None}]},
+        }
+    )
+
+    assert intake_response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {"fuel": {None: {"qty": 1.5, "unit": "л"}}}
+
+    move_response = engine.handle_command(
+        {
+            "command": "move",
+            "storage_id": storage_id,
+            "payload": {"item_id": "fuel", "qty": 0.5, "from": None, "to": "can"},
+        }
+    )
+
+    assert move_response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "fuel": {None: {"qty": 1.0, "unit": "л"}, "can": {"qty": 0.5, "unit": "л"}},
+    }
+
+    consume_response = engine.handle_command(
+        {
+            "command": "consume",
+            "storage_id": storage_id,
+            "payload": {"item_id": "fuel", "qty": 0.25, "from": "can"},
+        }
+    )
+
+    assert consume_response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "fuel": {None: {"qty": 1.0, "unit": "л"}, "can": {"qty": 0.25, "unit": "л"}},
+    }
+
+
+def test_unit_kept_without_override(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "sand", "qty": 2, "unit": "кг", "location": "bag"}]},
+        }
+    )
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "sand", "qty": 1, "location": "bag"}]},
+        }
+    )
+
+    assert backend.get_storage_snapshot(storage_id) == {"sand": {"bag": {"qty": 3.0, "unit": "кг"}}}
+
+
 def test_find_single_location(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
     engine.handle_command(
         {
@@ -230,7 +288,7 @@ def test_find_single_location(engine: CoreEngine, backend: InMemoryStorageBacken
     )
 
     assert response.ok is True
-    assert response.data == {"item_id": "radio", "total_qty": 4, "locations": {"null": 4}}
+    assert response.data == {"item_id": "radio", "total_qty": 4.0, "locations": {"null": 4.0}}
 
 
 def test_find_multiple_locations(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -260,8 +318,8 @@ def test_find_multiple_locations(engine: CoreEngine, backend: InMemoryStorageBac
     assert response.ok is True
     assert response.data == {
         "item_id": "radio",
-        "total_qty": 4,
-        "locations": {"null": 3, "shelf": 1},
+        "total_qty": 4.0,
+        "locations": {"null": 3.0, "shelf": 1.0},
     }
 
 
@@ -321,8 +379,8 @@ def test_list_with_multiple_items(engine: CoreEngine, backend: InMemoryStorageBa
 
     assert response.ok is True
     assert response.data == {
-        "radio": {"null": 1, "box": 1},
-        "battery": {"box": 5},
+        "radio": {"null": {"qty": 1.0, "unit": "од"}, "box": {"qty": 1.0, "unit": "од"}},
+        "battery": {"box": {"qty": 5.0, "unit": "од"}},
     }
 
 
@@ -346,7 +404,7 @@ def test_multiple_storages_are_isolated(engine: CoreEngine, backend: InMemorySto
 
     assert response_other.ok is True
     assert response_other.data == {}
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 2}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 2.0, "unit": "од"}}}
 
 
 def test_unknown_command_returns_error(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
@@ -373,7 +431,7 @@ def test_defaults_applied_by_policy(engine: CoreEngine, backend: InMemoryStorage
     )
 
     assert response_intake.ok is True
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 1}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 1.0, "unit": "од"}}}
 
     response_consume = engine.handle_command(
         {
@@ -403,4 +461,4 @@ def test_defaults_applied_by_policy(engine: CoreEngine, backend: InMemoryStorage
     )
 
     assert response_move.ok is True
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {"box": 1}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {"box": {"qty": 1.0, "unit": "од"}}}

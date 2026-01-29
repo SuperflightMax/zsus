@@ -1,4 +1,5 @@
 import copy
+import sqlite3
 from pathlib import Path
 
 from src.core.backends import SqliteStorageBackend
@@ -25,7 +26,7 @@ def test_intake_and_persist_across_sessions(tmp_path: Path):
     )
 
     assert response.ok is True
-    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: 3}}
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 3.0, "unit": "од"}}}
 
     # Recreate backend to ensure data persists on disk.
     backend_reopened = SqliteStorageBackend(storages_root)
@@ -40,7 +41,7 @@ def test_intake_and_persist_across_sessions(tmp_path: Path):
     )
 
     assert list_response.ok is True
-    assert list_response.data == {"radio": {"null": 3}}
+    assert list_response.data == {"radio": {"null": {"qty": 3.0, "unit": "од"}}}
 
 
 def test_move_and_consume_cleanup(tmp_path: Path):
@@ -73,7 +74,7 @@ def test_move_and_consume_cleanup(tmp_path: Path):
     )
 
     assert consume_response.ok is True
-    assert engine.backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": 1}}
+    assert engine.backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": {"qty": 1.0, "unit": "од"}}}
 
 
 def test_multiple_storages_isolated(tmp_path: Path):
@@ -97,8 +98,8 @@ def test_multiple_storages_isolated(tmp_path: Path):
         }
     )
 
-    assert snapshot(backend, "one") == {"radio": {None: 2}}
-    assert snapshot(backend, "two") == {"radio": {"box": 5}}
+    assert snapshot(backend, "one") == {"radio": {None: {"qty": 2.0, "unit": "од"}}}
+    assert snapshot(backend, "two") == {"radio": {"box": {"qty": 5.0, "unit": "од"}}}
 
 
 def test_database_file_created_and_deleted(tmp_path: Path):
@@ -132,3 +133,30 @@ def test_find_nonexistent_item_returns_error(tmp_path: Path):
 
     assert response.ok is False
     assert engine.backend.get_storage_snapshot(storage_id) == before
+
+
+def test_unit_column_migrates_existing_db(tmp_path: Path):
+    storage_id = "legacy_storage"
+    storages_root = tmp_path / "storages"
+    db_path = storages_root / storage_id / "storage.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        """
+        CREATE TABLE items (
+            item_name  TEXT NOT NULL,
+            location   TEXT,
+            qty        INTEGER NOT NULL,
+            PRIMARY KEY (item_name, location)
+        )
+        """
+    )
+    conn.execute("INSERT INTO items (item_name, location, qty) VALUES (?, ?, ?)", ("radio", None, 2))
+    conn.commit()
+    conn.close()
+
+    backend = SqliteStorageBackend(storages_root)
+    snapshot_data = backend.get_storage_snapshot(storage_id)
+
+    assert snapshot_data == {"radio": {None: {"qty": 2.0, "unit": "од"}}}

@@ -65,8 +65,9 @@ def apply_policy(command: Dict[str, Any]) -> OperationResult:
             normalized_items.append(
                 {
                     "item_id": item_id,
-                    "qty": _ensure_int(entry.get("qty"), DEFAULT_QTY),
+                    "qty": _ensure_number(entry.get("qty"), DEFAULT_QTY),
                     "location": entry.get("location", DEFAULT_LOCATION),
+                    "unit": _normalize_unit(entry.get("unit")),
                 }
             )
         normalized["payload"]["items"] = normalized_items
@@ -79,7 +80,7 @@ def apply_policy(command: Dict[str, Any]) -> OperationResult:
                 system_log=["item_id missing for move/consume."],
             )
         payload["item_id"] = item_id
-        payload["qty"] = _ensure_int(payload.get("qty"), DEFAULT_QTY)
+        payload["qty"] = _ensure_number(payload.get("qty"), DEFAULT_QTY)
         payload["from"] = payload.get("from", DEFAULT_LOCATION)
         if name == "move":
             payload["to"] = payload.get("to", DEFAULT_LOCATION)
@@ -95,6 +96,18 @@ def apply_policy(command: Dict[str, Any]) -> OperationResult:
     return OperationResult.success(data=normalized, system_log=["Policy applied."])
 
 
-def _ensure_int(value: Optional[Any], default: int) -> int:
-    return value if isinstance(value, int) else default
+def _ensure_number(value: Optional[Any], default: float) -> float:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    return float(default)
 
+
+def _normalize_unit(value: Optional[Any]) -> Optional[str]:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None

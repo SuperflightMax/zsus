@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 34
+- Added unit tracking to storage entries with default `"од"` and enabled fractional quantities throughout core validation and arithmetic.
+- Implemented automatic SQLite migration to add the `unit` column on activation and updated list snapshot payloads to include `{qty, unit}` per location.
+- Adjusted CLI/LLM snapshot tables to render unit/quantity formatting consistently and expanded tests/scenarios/documentation for the new behavior.
+
 # 33
 - Removed the web client startup microphone permission probe so mic prompts and warnings only happen after user interaction.
 - Updated Android WebView permission handling to wait for runtime audio permission results before granting or denying audio capture, preventing false warnings.

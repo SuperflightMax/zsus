@@ -16,7 +16,7 @@ intake
 Додає предмети. Формат payload:
 {{
 "items": [
-{{ "item_id": "string", "qty": 1, "location": "string або null (склад)" }}
+{{ "item_id": "string", "qty": 1, "unit": "string (необов'язково)", "location": "string або null (склад)" }}
 ]
 }}
 storage_id завжди ACTIVE_STORAGE.

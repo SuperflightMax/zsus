@@ -39,7 +39,8 @@ MVP хранилище: SQLite (PostgreSQL поддерживается схем
 |-------------|----------|---------------------------|
 | item_id     | string   | ссылка на items.id        |
 | location_id | string \ | null | null = без локации |
-| qty         | integer  | количество                |
+| qty         | number   | количество                |
+| unit        | string   | одиниця виміру            |
 ```
 **Уникальный ключ:** `(item_id, location_id)`
 
@@ -54,7 +55,7 @@ MVP хранилище: SQLite (PostgreSQL поддерживается схем
 | id            | integer  | primary key |
 | type          | string   | intake / move / etc |
 | item_id       | string   | предмет |
-| qty           | integer  | количество |
+| qty           | number   | количество |
 | from_location | string \ | null | откуда |
 | to_location   | string \ | null | куда |
 | created_at    | datetime | время операции |
@@ -138,7 +139,8 @@ CREATE TABLE locations (
 CREATE TABLE stock (
     item_id TEXT NOT NULL,
     location_id TEXT NULL,
-    qty INTEGER NOT NULL CHECK (qty >= 0),
+    qty REAL NOT NULL CHECK (qty >= 0),
+    unit TEXT NOT NULL DEFAULT 'од',
 
     PRIMARY KEY (item_id, location_id),
 
@@ -166,7 +168,7 @@ CREATE TABLE movements (
 
     type TEXT NOT NULL,
     item_id TEXT NOT NULL,
-    qty INTEGER NOT NULL CHECK (qty > 0),
+    qty REAL NOT NULL CHECK (qty > 0),
 
     from_location TEXT NULL,
     to_location TEXT NULL,

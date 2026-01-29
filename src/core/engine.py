@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 from .result import OperationResult
 from .policy import apply_policy
+from .defaults import DEFAULT_UNIT
+
+EPSILON = 1e-9
 
 
 class StorageBackend(Protocol):
@@ -21,7 +24,7 @@ class StorageBackend(Protocol):
     def delete_storage(self, storage_id: str) -> None:
         ...
 
-    def get_storage_snapshot(self, storage_id: str) -> Dict[str, Dict[Optional[str], int]]:
+    def get_storage_snapshot(self, storage_id: str) -> Dict[str, Dict[Optional[str], Dict[str, Any]]]:
         ...
 
     def update_item_location(
@@ -29,8 +32,9 @@ class StorageBackend(Protocol):
         storage_id: str,
         item_id: str,
         location: Optional[str],
-        delta: int,
-    ) -> int:
+        delta: float,
+        unit: Optional[str] = None,
+    ) -> float:
         ...
 
     def remove_location_if_empty(
@@ -47,7 +51,10 @@ class StorageBackend(Protocol):
     def location_exists(self, storage_id: str, item_id: str, location: Optional[str]) -> bool:
         ...
 
-    def location_quantity(self, storage_id: str, item_id: str, location: Optional[str]) -> int:
+    def location_quantity(self, storage_id: str, item_id: str, location: Optional[str]) -> float:
+        ...
+
+    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str]]:
         ...
 
 
@@ -55,7 +62,7 @@ class StorageBackend(Protocol):
 class InMemoryStorageBackend:
     """Simple in-memory backend for development and testing."""
 
-    storages: Dict[str, Dict[str, Dict[Optional[str], int]]] = field(default_factory=dict)
+    storages: Dict[str, Dict[str, Dict[Optional[str], Dict[str, Any]]]] = field(default_factory=dict)
 
     def ensure_storage(self, storage_id: str) -> None:
         self.storages.setdefault(storage_id, {})
@@ -66,20 +73,34 @@ class InMemoryStorageBackend:
     def delete_storage(self, storage_id: str) -> None:
         self.storages.pop(storage_id, None)
 
-    def get_storage_snapshot(self, storage_id: str) -> Dict[str, Dict[Optional[str], int]]:
-        return {item: dict(locations) for item, locations in self.storages.get(storage_id, {}).items()}
+    def get_storage_snapshot(self, storage_id: str) -> Dict[str, Dict[Optional[str], Dict[str, Any]]]:
+        return {item: {loc: dict(data) for loc, data in locations.items()} for item, locations in self.storages.get(storage_id, {}).items()}
 
     def update_item_location(
         self,
         storage_id: str,
         item_id: str,
         location: Optional[str],
-        delta: int,
-    ) -> int:
+        delta: float,
+        unit: Optional[str] = None,
+    ) -> float:
         self.ensure_storage(storage_id)
         item_locations = self.storages[storage_id].setdefault(item_id, {})
-        new_qty = item_locations.get(location, 0) + delta
-        item_locations[location] = new_qty
+        entry = item_locations.get(location)
+        if entry is None:
+            current_qty = 0.0
+            current_unit = None
+        else:
+            current_qty = float(entry.get("qty", 0.0))
+            current_unit = entry.get("unit")
+        new_qty = current_qty + float(delta)
+        if entry is None:
+            unit_to_use = unit or current_unit or DEFAULT_UNIT
+            item_locations[location] = {"qty": new_qty, "unit": unit_to_use}
+        else:
+            if unit:
+                entry["unit"] = unit
+            entry["qty"] = new_qty
         return new_qty
 
     def remove_location_if_empty(
@@ -91,7 +112,8 @@ class InMemoryStorageBackend:
         item_locations = self.storages.get(storage_id, {}).get(item_id)
         if not item_locations:
             return
-        if item_locations.get(location) == 0:
+        entry = item_locations.get(location)
+        if entry and abs(float(entry.get("qty", 0.0))) <= EPSILON:
             item_locations.pop(location, None)
         if not item_locations:
             self.storages.get(storage_id, {}).pop(item_id, None)
@@ -102,8 +124,15 @@ class InMemoryStorageBackend:
     def location_exists(self, storage_id: str, item_id: str, location: Optional[str]) -> bool:
         return location in self.storages.get(storage_id, {}).get(item_id, {})
 
-    def location_quantity(self, storage_id: str, item_id: str, location: Optional[str]) -> int:
-        return self.storages.get(storage_id, {}).get(item_id, {}).get(location, 0)
+    def location_quantity(self, storage_id: str, item_id: str, location: Optional[str]) -> float:
+        entry = self.storages.get(storage_id, {}).get(item_id, {}).get(location)
+        return float(entry.get("qty", 0.0)) if entry else 0.0
+
+    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str]]:
+        entry = self.storages.get(storage_id, {}).get(item_id, {}).get(location)
+        if not entry:
+            return None
+        return float(entry.get("qty", 0.0)), str(entry.get("unit", DEFAULT_UNIT))
 
 
 class CoreEngine:
@@ -166,9 +195,10 @@ class CoreEngine:
             item_id = entry.get("item_id")
             qty = entry.get("qty")
             location = entry.get("location")
+            unit = entry.get("unit")
             self._validate_item_id(item_id)
             self._validate_qty(qty)
-            self.backend.update_item_location(storage_id, item_id, location, qty)
+            self.backend.update_item_location(storage_id, item_id, location, qty, unit=unit)
         return OperationResult.success(data={})
 
     def _move(self, storage_id: str, payload: Dict[str, Any]) -> OperationResult:
@@ -180,13 +210,15 @@ class CoreEngine:
         self._validate_item_id(item_id)
         self._validate_qty(qty)
         self._ensure_item_location_exists(storage_id, item_id, from_location)
-        available = self.backend.location_quantity(storage_id, item_id, from_location)
-        if available < qty:
+        entry = self.backend.location_entry(storage_id, item_id, from_location)
+        available = entry[0] if entry else 0.0
+        unit = entry[1] if entry else DEFAULT_UNIT
+        if available + EPSILON < qty:
             raise ValueError("Недостатньо предметів у вихідній локації.")
 
         self.backend.update_item_location(storage_id, item_id, from_location, -qty)
         self.backend.remove_location_if_empty(storage_id, item_id, from_location)
-        self.backend.update_item_location(storage_id, item_id, to_location, qty)
+        self.backend.update_item_location(storage_id, item_id, to_location, qty, unit=unit)
         return OperationResult.success(data={})
 
     def _consume(self, storage_id: str, payload: Dict[str, Any]) -> OperationResult:
@@ -198,7 +230,7 @@ class CoreEngine:
         self._validate_qty(qty)
         self._ensure_item_location_exists(storage_id, item_id, from_location)
         available = self.backend.location_quantity(storage_id, item_id, from_location)
-        if available < qty:
+        if available + EPSILON < qty:
             raise ValueError("Недостатньо предметів у локації.")
 
         self.backend.update_item_location(storage_id, item_id, from_location, -qty)
@@ -217,12 +249,12 @@ class CoreEngine:
         if not locations:
             raise ValueError("Предмет не знайдено.")
 
-        total_qty = sum(locations.values())
+        total_qty = sum(entry["qty"] for entry in locations.values())
         return OperationResult.success(
             data={
                 "item_id": item_id,
                 "total_qty": total_qty,
-                "locations": {self._location_key(k): v for k, v in locations.items()},
+                "locations": {self._location_key(k): entry["qty"] for k, entry in locations.items()},
             }
         )
 
@@ -239,8 +271,17 @@ class CoreEngine:
         return "null" if location is None else str(location)
 
     @staticmethod
-    def _serialize_snapshot(snapshot: Dict[str, Dict[Optional[str], int]]) -> Dict[str, Dict[str, int]]:
-        return {item: {CoreEngine._location_key(loc): qty for loc, qty in locations.items()} for item, locations in snapshot.items()}
+    def _serialize_snapshot(snapshot: Dict[str, Dict[Optional[str], Dict[str, Any]]]) -> Dict[str, Dict[str, Dict[str, Any]]]:
+        return {
+            item: {
+                CoreEngine._location_key(loc): {
+                    "qty": entry.get("qty"),
+                    "unit": entry.get("unit", DEFAULT_UNIT),
+                }
+                for loc, entry in locations.items()
+            }
+            for item, locations in snapshot.items()
+        }
 
     @staticmethod
     def _validate_item_id(item_id: Any) -> None:
@@ -249,7 +290,7 @@ class CoreEngine:
 
     @staticmethod
     def _validate_qty(qty: Any) -> None:
-        if not isinstance(qty, int) or qty <= 0:
+        if isinstance(qty, bool) or not isinstance(qty, (int, float)) or qty <= 0:
             raise ValueError("qty має бути > 0")
 
     @staticmethod

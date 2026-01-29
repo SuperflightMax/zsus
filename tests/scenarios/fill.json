@@ -24,7 +24,7 @@
         }
       },
       "expect": {
-        "total_qty": 50
+        "total_qty": 50.0
       }
     },
     {
@@ -35,7 +35,7 @@
         }
       },
       "expect": {
-        "total_qty": 40
+        "total_qty": 40.0
       }
     }
   ]
