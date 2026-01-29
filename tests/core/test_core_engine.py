@@ -111,6 +111,45 @@ def test_move_between_locations(engine: CoreEngine, backend: InMemoryStorageBack
     }
 
 
+def test_location_alias_sklad(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    intake_response = engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 5, "location": " склад "}]},
+        }
+    )
+
+    assert intake_response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 5.0, "unit": "од"}}}
+
+    move_response = engine.handle_command(
+        {
+            "command": "move",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio", "qty": 2, "from": "склад", "to": "кухня"},
+        }
+    )
+
+    assert move_response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "radio": {None: {"qty": 3.0, "unit": "од"}, "кухня": {"qty": 2.0, "unit": "од"}},
+    }
+
+    consume_response = engine.handle_command(
+        {
+            "command": "consume",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio", "qty": 1, "from": "Склад"},
+        }
+    )
+
+    assert consume_response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "radio": {None: {"qty": 2.0, "unit": "од"}, "кухня": {"qty": 2.0, "unit": "од"}},
+    }
+
+
 def test_move_not_enough_qty(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
     engine.handle_command(
         {

@@ -194,7 +194,7 @@ class CoreEngine:
         for entry in items:
             item_id = entry.get("item_id")
             qty = entry.get("qty")
-            location = entry.get("location")
+            location = self._normalize_location(entry.get("location"))
             unit = entry.get("unit")
             self._validate_item_id(item_id)
             self._validate_qty(qty)
@@ -204,8 +204,8 @@ class CoreEngine:
     def _move(self, storage_id: str, payload: Dict[str, Any]) -> OperationResult:
         item_id = payload.get("item_id")
         qty = payload.get("qty")
-        from_location = payload.get("from")
-        to_location = payload.get("to")
+        from_location = self._normalize_location(payload.get("from"))
+        to_location = self._normalize_location(payload.get("to"))
 
         self._validate_item_id(item_id)
         self._validate_qty(qty)
@@ -224,7 +224,7 @@ class CoreEngine:
     def _consume(self, storage_id: str, payload: Dict[str, Any]) -> OperationResult:
         item_id = payload.get("item_id")
         qty = payload.get("qty")
-        from_location = payload.get("from")
+        from_location = self._normalize_location(payload.get("from"))
 
         self._validate_item_id(item_id)
         self._validate_qty(qty)
@@ -282,6 +282,17 @@ class CoreEngine:
             }
             for item, locations in snapshot.items()
         }
+
+    @staticmethod
+    def _normalize_location(location: Optional[Any]) -> Optional[Any]:
+        if location is None:
+            return None
+        if not isinstance(location, str):
+            return location
+        normalized = location.strip()
+        if normalized.lower() == "склад":
+            return None
+        return normalized or None
 
     @staticmethod
     def _validate_item_id(item_id: Any) -> None:

@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 35
+- Normalized core location inputs so "склад" (trimmed, case-insensitive) is treated as the null/main location for intake, move, and consume.
+- Added a core unit test that verifies intake, move, and consume work correctly when "склад" is provided as the location.
+
 # 34
 - Added unit tracking to storage entries with default `"од"` and enabled fractional quantities throughout core validation and arithmetic.
 - Implemented automatic SQLite migration to add the `unit` column on activation and updated list snapshot payloads to include `{qty, unit}` per location.

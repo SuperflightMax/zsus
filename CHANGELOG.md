@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 35
+- Normalized core location inputs so "склад" (trimmed, case-insensitive) maps to the main null location for intake, move, and consume commands.
+- Added core unit coverage to ensure aliasing of "склад" works for intake, move, and consume scenarios.
+
 # 34
 - Added unit tracking and fractional quantities in core storage with automatic SQLite migration for the new `unit` column, plus updated list snapshots to return `{qty, unit}` entries.
 - Updated LLM/CLI snapshot tables to show Unit with consistent quantity formatting, and refreshed tests/docs to match the new behavior.
