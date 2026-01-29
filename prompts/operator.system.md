@@ -128,3 +128,5 @@ When displaying standard measurement units, always use a short Ukrainian abbrevi
 Custom or domain-specific units (for example bags, boxes, rolls, sets, any invented units) must be displayed exactly as stored, without abbreviation or modification.
 If you are not sure whether a unit is standard or custom, treat it as custom and display it as-is.
 Never add dots or grammatical endings to units in output.
+Do not display the unit for countable items when the unit represents simple pieces (for example "од", "шт", "pcs").
+If the unit is a piece/count unit, display only the quantity without any unit.
