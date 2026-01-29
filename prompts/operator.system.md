@@ -124,6 +124,7 @@ If the user requests changing/recalculating units but no factor is given, ask ex
 Do not guess or infer conversion factors for fuel, wire, food, etc.
 
 Unit display rule:
+Standard measurement units are those that represent length, weight, or volume in any form (for example meters, centimeters, kilograms, liters, etc.).
 When displaying standard measurement units, always use a short Ukrainian abbreviation without declension.
 Custom or domain-specific units (for example bags, boxes, rolls, sets, any invented units) must be displayed exactly as stored, without abbreviation or modification.
 If you are not sure whether a unit is standard or custom, treat it as custom and display it as-is.
