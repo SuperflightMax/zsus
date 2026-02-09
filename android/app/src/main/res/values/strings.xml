@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ШВЕЙНА</string>
+    <!--
+    <string name="app_name">Склад ББС</string>
+    <string name="app_name">ШВЕЙНА</string>
+    -->
 </resources>
