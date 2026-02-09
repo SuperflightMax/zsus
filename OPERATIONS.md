@@ -187,3 +187,62 @@ nano .env
 cd ~/zsus
 rm -rf .venv
 bash boot.sh
+
+# Multi-instance VPS (1 склад = 1 сервіс)
+
+Цільовий layout:
+
+```
+~/zs/instances/uzhas
+~/zs/instances/bbs
+~/zs/instances/demo
+~/zs/update_all.sh
+```
+
+`update_all.sh` можна взяти з репозиторію (`ops/update_all.sh`) та скопіювати у `~/zs/`.
+Приклади:
+
+- `./update_all.sh` (оновити все)
+- `./update_all.sh --no-restart` (оновити без рестартів)
+- `./update_all.sh --only demo` (оновити один інстанс)
+
+## Додати новий склад (інстанс)
+
+1. Створити папку інстансу:
+   - `mkdir -p ~/zs/instances/<id>`
+2. Клонувати репозиторій:
+   - `git clone <REPO_URL> ~/zs/instances/<id>`
+3. Створити `.env`:
+   - `cd ~/zs/instances/<id>`
+   - `cp env.example .env`
+4. Встановити параметри:
+   - `ZSUS_HTTP_PORT=...`
+   - `DEFAULT_STORAGE=<id>` (або ім'я складу/профілю)
+   - `STORAGE_TITLE=...`
+5. Bootstrap:
+   - `./boot.sh`
+6. Запуск:
+   - `./start.sh` (або через PM2)
+7. Перевірка:
+   - `curl http://127.0.0.1:<port>/health`
+
+## Nginx / subdomain proxy
+
+Приклад проксі на інстанси:
+
+- `zsusuzhas.<domain>` -> `127.0.0.1:8123`
+- `zsusbbs.<domain>` -> `127.0.0.1:8124`
+- `zsusdemo.<domain>` -> `127.0.0.1:8111`
+
+## Legacy redirect
+
+`/zsus/` -> `301` на `zsusuzhas.<domain>`
+
+## PM2 (опційно)
+
+Якщо використовуєте PM2 для керування всіма інстансами:
+
+- `ops/pm2_start_all.sh`
+- `ops/pm2_stop_all.sh`
+- `ops/pm2_restart_all.sh`
+- `ops/pm2_status.sh`

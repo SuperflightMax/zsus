@@ -1,5 +1,11 @@
 # last change always at the top here (under this line)
 
+# 36
+- Added `/api/meta` to the HTTP adapter so clients can fetch storage title/subtitle and server version from env defaults.
+- Updated the web client to load storage metadata on startup while keeping HTML fallback text intact.
+- Added multi-instance ops tooling: `ops/update_all.sh`, PM2 ecosystem generation, and wrapper scripts.
+- Documented multi-instance VPS layout, instance setup, and proxy/redirect notes in OPERATIONS.md.
+
 # 35
 - Normalized core location inputs so "склад" (trimmed, case-insensitive) is treated as the null/main location for intake, move, and consume.
 - Added a core unit test that verifies intake, move, and consume work correctly when "склад" is provided as the location.

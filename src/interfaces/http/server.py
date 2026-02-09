@@ -27,6 +27,8 @@ CLIENT_CONFIG_DEFAULTS = {
     "audio_web_speech_max_seconds": 30,
 }
 CLIENT_MAX_SECONDS_RANGE = (5, 120)
+DEFAULT_STORAGE_TITLE = 'СКЛАД "ШВЕЙНА МАЙСТЕРНЯ"'
+DEFAULT_STORAGE_SUBTITLE = "ШІ оператор online."
 
 
 class ChatHandler(BaseHTTPRequestHandler):
@@ -41,6 +43,19 @@ class ChatHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/config":
             self._send_json(200, {"ok": True, "client": _get_client_config()})
+            return
+        if path == "/api/meta":
+            title, subtitle = _get_storage_titles()
+            response = {
+                "ok": True,
+                "storage": {
+                    "id": self.server.default_storage_id,
+                    "title": title,
+                    "subtitle": subtitle,
+                },
+                "server": {"version": self.server_version},
+            }
+            self._send_json(200, response)
             return
 
         if path == "/":
@@ -241,6 +256,12 @@ def _get_client_config() -> Dict[str, Any]:
             max_seconds,
         ),
     }
+
+
+def _get_storage_titles() -> tuple[str, str]:
+    title = os.getenv("STORAGE_TITLE", DEFAULT_STORAGE_TITLE)
+    subtitle = os.getenv("STORAGE_SUBTITLE", DEFAULT_STORAGE_SUBTITLE)
+    return title, subtitle
 
 
 def run() -> None:

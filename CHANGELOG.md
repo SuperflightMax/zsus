@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 36
+- Added `/api/meta` with env-driven storage titles and updated web client to fetch and display instance metadata.
+- Added multi-instance ops scripts (update_all + PM2 ecosystem wrappers) and documented multi-instance deployment steps.
+
 # 35
 - Normalized core location inputs so "склад" (trimmed, case-insensitive) maps to the main null location for intake, move, and consume commands.
 - Added core unit coverage to ensure aliasing of "склад" works for intake, move, and consume scenarios.

@@ -6,6 +6,8 @@ const chat = document.querySelector(".chat");
 const micArea = document.getElementById("mic-area");
 const micButton = document.getElementById("mic-button");
 const micWarning = document.getElementById("mic-warning");
+const storageTitle = document.getElementById("storage-title");
+const storageSubtitle = document.getElementById("storage-subtitle");
 const defaultInputPlaceholder = input ? input.placeholder : "";
 
 const params = new URLSearchParams(window.location.search);
@@ -24,6 +26,28 @@ let recognition = null;
 let recognitionTimer = null;
 let isListening = false;
 let isShowingListeningPlaceholder = false;
+
+async function loadMeta() {
+  try {
+    const response = await fetch("api/meta");
+    const data = await response.json();
+    if (response.ok && data && data.ok && data.storage) {
+      const title = data.storage.title;
+      const subtitle = data.storage.subtitle;
+      if (storageTitle && title) {
+        storageTitle.textContent = title;
+        document.title = `${title} — ZSUS`;
+      }
+      if (storageSubtitle && subtitle) {
+        storageSubtitle.textContent = subtitle;
+      }
+    }
+  } catch (error) {
+    // Keep defaults if meta cannot be loaded.
+  }
+}
+
+loadMeta();
 
 if (userId && userId.trim()) {
   clientId = userId.trim();

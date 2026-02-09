@@ -34,6 +34,25 @@ Prototype constraints are explicit and intentional: no auth, no persistence, ser
 { "ok": true }
 ```
 
+### `GET /api/meta`
+
+**Purpose:** return instance metadata for web clients.
+
+**Response 200**
+```json
+{
+  "ok": true,
+  "storage": {
+    "id": "<active_storage_id or default_storage_id or null>",
+    "title": "string",
+    "subtitle": "string"
+  },
+  "server": {
+    "version": "zsus-http/0.1"
+  }
+}
+```
+
 ### `POST /api/chat`
 
 **Purpose:** send a user message and receive assistant reply.
