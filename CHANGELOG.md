@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 37
+- Documented the path-based multi-instance VPS setup, nginx routing snippet, and localhost-only port guidance in OPERATIONS.md.
+
 # 36
 - Added `/api/meta` with env-driven storage titles and updated web client to fetch and display instance metadata.
 - Added multi-instance ops scripts (update_all + PM2 ecosystem wrappers) and documented multi-instance deployment steps.

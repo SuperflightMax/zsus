@@ -190,7 +190,7 @@ bash boot.sh
 
 # Multi-instance VPS (1 склад = 1 сервіс)
 
-Цільовий layout:
+Цільовий layout (новий робочий root, старий `~/zsus` поки не чіпаємо):
 
 ```
 ~/zs/instances/uzhas
@@ -206,7 +206,10 @@ bash boot.sh
 - `./update_all.sh --no-restart` (оновити без рестартів)
 - `./update_all.sh --only demo` (оновити один інстанс)
 
-## Додати новий склад (інстанс)
+## Додати новий склад (інстанс) — path-based routing
+
+> Всі інстанси працюють на одному домені через префікс шляху `/zsus/<id>/`.
+> Nginx проксіює у localhost, зовнішні порти не відкриваємо.
 
 1. Створити папку інстансу:
    - `mkdir -p ~/zs/instances/<id>`
@@ -215,28 +218,71 @@ bash boot.sh
 3. Створити `.env`:
    - `cd ~/zs/instances/<id>`
    - `cp env.example .env`
-4. Встановити параметри:
-   - `ZSUS_HTTP_PORT=...`
+4. Встановити параметри (приклад):
+   - `ZSUS_HTTP_HOST=127.0.0.1`
+   - `ZSUS_HTTP_PORT=8123` (унікальний порт для інстансу)
    - `DEFAULT_STORAGE=<id>` (або ім'я складу/профілю)
    - `STORAGE_TITLE=...`
 5. Bootstrap:
    - `./boot.sh`
 6. Запуск:
    - `./start.sh` (або через PM2)
-7. Перевірка:
+7. Перевірка локально:
    - `curl http://127.0.0.1:<port>/health`
 
-## Nginx / subdomain proxy
+## Nginx / path-based proxy (поточна схема)
 
-Приклад проксі на інстанси:
+Проксі на інстанси через шлях одного домену:
 
-- `zsusuzhas.<domain>` -> `127.0.0.1:8123`
-- `zsusbbs.<domain>` -> `127.0.0.1:8124`
-- `zsusdemo.<domain>` -> `127.0.0.1:8111`
+- `https://superflight.vps.webdock.cloud/zsus/uzhas/` -> `127.0.0.1:8123`
+- `https://superflight.vps.webdock.cloud/zsus/bbs/`   -> `127.0.0.1:8124`
+- `https://superflight.vps.webdock.cloud/zsus/demo/`  -> `127.0.0.1:8111`
+- `/zsus/` -> `301` на `/zsus/uzhas/`
 
-## Legacy redirect
+**Важливо:** зовнішні порти 8123/8124/8111 не відкривати. В `.env` кожного інстансу
+рекомендується `ZSUS_HTTP_HOST=127.0.0.1`, а nginx проксіює до localhost.
 
-`/zsus/` -> `301` на `zsusuzhas.<domain>`
+Приклад snippet (всередині `server { ... }`):
+
+```
+location = /zsus { return 301 /zsus/; }
+location = /zsus/ { return 301 /zsus/uzhas/; }
+
+location /zsus/uzhas/ {
+    proxy_pass http://127.0.0.1:8123/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /zsus/bbs/ {
+    proxy_pass http://127.0.0.1:8124/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /zsus/demo/ {
+    proxy_pass http://127.0.0.1:8111/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+## Future: migrate to subdomains (коли буде свій домен/DNS)
+
+Зараз піддомени неможливі, бо `*.vps.webdock.cloud` не контролюється нами (DNS wildcard
+для `zsusuzhas.*` повертає пусто). Якщо буде власний домен, схема може бути така:
+
+- `uzhas.<your-domain>` -> `127.0.0.1:8123`
+- `bbs.<your-domain>`   -> `127.0.0.1:8124`
+- `demo.<your-domain>`  -> `127.0.0.1:8111`
+
+Потрібно буде налаштувати DNS записи й сертифікати (Certbot з SAN на всі піддомени).
 
 ## PM2 (опційно)
 

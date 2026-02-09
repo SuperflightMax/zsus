@@ -1,5 +1,8 @@
 # last change always at the top here (under this line)
 
+# 37
+- Updated OPERATIONS.md to document path-based multi-instance routing, localhost-only ports, and the new ~/zs layout with nginx snippets.
+
 # 36
 - Added `/api/meta` to the HTTP adapter so clients can fetch storage title/subtitle and server version from env defaults.
 - Updated the web client to load storage metadata on startup while keeping HTML fallback text intact.
