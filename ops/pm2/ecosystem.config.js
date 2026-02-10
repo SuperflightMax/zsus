@@ -25,7 +25,7 @@ function loadInstances() {
         script: "bash",
         args: [
           "-lc",
-          "set -a; source .env; set +a; python -m src.interfaces.http.server",
+          "set -a; source .env; set +a; ./.venv/bin/python -m src.interfaces.http.server"
         ],
         out_file: path.join(logsDir, "pm2.out.log"),
         error_file: path.join(logsDir, "pm2.err.log"),
