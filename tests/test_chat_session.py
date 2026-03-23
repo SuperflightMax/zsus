@@ -1,3 +1,6 @@
+import json
+
+from src.core.result import OperationResult
 from src.llm.llm_operator import LLMResult, SnapshotResult
 from src.session.chat_session import ChatSession
 
@@ -67,3 +70,88 @@ def test_chat_session_clears_context_on_failure():
 
     assert result.ok is False
     assert session.dialogue_context == []
+
+
+def test_chat_session_logs_audit_context_for_successful_command(monkeypatch, tmp_path):
+    llm_result = LLMResult(
+        ok=True,
+        assistant_text="Done.",
+        commands=[
+            {
+                "command": "intake",
+                "payload": {"items": [{"item_id": "mask", "qty": 1}]},
+                "storage_id": "ACTIVE_STORAGE",
+            }
+        ],
+        need_more_info=False,
+        questions=[],
+        raw_response=None,
+        parsed=None,
+        system_log=[],
+    )
+    session = ChatSession(active_storage_id="st", llm_operator=DummyLLMOperator(llm_result))
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "src.session.chat_session.handle_command",
+        lambda command_payload: OperationResult.success(user_text="ok", system_log=[]),
+    )
+
+    result = session.handle_text(
+        "Прийми маску",
+        operator_id=" Falcon ",
+        client_id=" client-123 ",
+        source=" http ",
+    )
+
+    assert result.ok is True
+    log_entry = json.loads((tmp_path / "logs" / "actions.log").read_text(encoding="utf-8").strip())
+    assert log_entry["storage_id"] == "st"
+    assert log_entry["command"] == "intake"
+    assert log_entry["client_id"] == "client-123"
+    assert log_entry["operator_id"] == "Falcon"
+    assert log_entry["source"] == "http"
+    assert log_entry["core_ok"] is True
+    assert "core_error" not in log_entry
+
+
+def test_chat_session_logs_audit_context_for_failed_command(monkeypatch, tmp_path):
+    llm_result = LLMResult(
+        ok=True,
+        assistant_text="Trying.",
+        commands=[
+            {
+                "command": "move",
+                "payload": {"item_id": "mask", "qty": 2, "from": "A", "to": "B"},
+                "storage_id": "ACTIVE_STORAGE",
+            }
+        ],
+        need_more_info=False,
+        questions=[],
+        raw_response=None,
+        parsed=None,
+        system_log=[],
+    )
+    session = ChatSession(active_storage_id="st", llm_operator=DummyLLMOperator(llm_result))
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "src.session.chat_session.handle_command",
+        lambda command_payload: OperationResult.failure(user_text="not enough stock", system_log=[]),
+    )
+
+    result = session.handle_text(
+        "Перемісти маску",
+        operator_id="Raven",
+        client_id="client-999",
+        source="http",
+    )
+
+    assert result.ok is False
+    log_entry = json.loads((tmp_path / "logs" / "actions.log").read_text(encoding="utf-8").strip())
+    assert log_entry["command"] == "move"
+    assert log_entry["client_id"] == "client-999"
+    assert log_entry["operator_id"] == "Raven"
+    assert log_entry["source"] == "http"
+    assert log_entry["core_ok"] is False
+    assert log_entry["core_error"] == "not enough stock"

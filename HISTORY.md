@@ -1,5 +1,11 @@
 # last change always at the top here (under this line)
 
+# 38
+- Added a separate `operator_id`/callsign flow to the shared web client with localStorage persistence, first-open prompt, and in-UI callsign switching, while keeping the existing `client_id` session flow intact.
+- Extended the HTTP adapter to accept optional `operator_id` and forward audit context (`operator_id`, `client_id`, `source="http"`) into `ChatSession` without adding business logic to the transport layer.
+- Expanded `logs/actions.log` entries for executed commands to include `operator_id`, `client_id`, `source`, and `core_error` on failed core execution, plus added backend tests and docs updates for web/Android/HTTP behavior.
+- Clarified the web callsign bootstrap so `operator_id`/`callsign` is not only persisted to localStorage but also no longer needs to remain in the address bar after the first load.
+
 # 37
 - Updated OPERATIONS.md to document path-based multi-instance routing, localhost-only ports, and the new ~/zs layout with nginx snippets.
 

@@ -29,7 +29,14 @@ class ChatSession:
     def set_active_storage_id(self, storage_id: Optional[str]) -> None:
         self.active_storage_id = storage_id
 
-    def handle_text(self, user_text: str) -> OperationResult:
+    def handle_text(
+        self,
+        user_text: str,
+        *,
+        operator_id: Optional[str] = None,
+        client_id: Optional[str] = None,
+        source: Optional[str] = None,
+    ) -> OperationResult:
         system_log: List[str] = [f"Input: {user_text}"]
         if not self.active_storage_id:
             system_log.append("No active storage for LLM input.")
@@ -74,6 +81,12 @@ class ChatSession:
 
         self.dialogue_context.clear()
 
+        audit_context = {
+            "client_id": _normalize_optional_str(client_id),
+            "operator_id": _normalize_optional_str(operator_id),
+            "source": _normalize_optional_str(source),
+        }
+
         for command in llm_result.commands:
             payload = command.get("payload") or {}
             storage_id = command.get("storage_id")
@@ -85,7 +98,7 @@ class ChatSession:
             }
             system_log.append(f"Executing: {json.dumps(command_payload, ensure_ascii=False)}")
             response = handle_command(command_payload)
-            _append_action_log(command_payload, response)
+            _append_action_log(command_payload, response, audit_context=audit_context)
             system_log.append(f"Core result: {json.dumps(response.to_dict(), ensure_ascii=False)}")
             if not response.ok:
                 user_text = (
@@ -97,17 +110,36 @@ class ChatSession:
         return OperationResult.success(user_text=llm_result.assistant_text, system_log=system_log)
 
 
-def _append_action_log(command_payload: Dict[str, Any], response: OperationResult) -> None:
+def _normalize_optional_str(value: Optional[str]) -> Optional[str]:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _append_action_log(
+    command_payload: Dict[str, Any],
+    response: OperationResult,
+    *,
+    audit_context: Optional[Dict[str, Optional[str]]] = None,
+) -> None:
     log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "actions.log"
     entry = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "storage_id": command_payload.get("storage_id"),
+        "client_id": None,
+        "operator_id": None,
+        "source": None,
         "command": command_payload.get("command"),
         "payload": command_payload.get("payload"),
         "core_ok": response.ok,
     }
+    if audit_context:
+        entry["client_id"] = audit_context.get("client_id")
+        entry["operator_id"] = audit_context.get("operator_id")
+        entry["source"] = audit_context.get("source")
     if not response.ok:
         entry["core_error"] = response.user_text
     with log_path.open("a", encoding="utf-8") as handle:

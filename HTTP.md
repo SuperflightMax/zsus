@@ -61,9 +61,12 @@ Prototype constraints are explicit and intentional: no auth, no persistence, ser
 ```json
 {
   "text": "string (required)",
-  "client_id": "string (optional)"
+  "client_id": "string (optional)",
+  "operator_id": "string (optional)"
 }
 ```
+
+`operator_id` is an optional human-readable operator callsign for audit logs. HTTP validates it softly: non-string or empty-after-trim values are treated as `null`.
 
 **Response 200**
 ```json
@@ -113,7 +116,8 @@ Unexpected server error.
 
 - HTTP adapter **must return only** `OperationResult.user_text`.
 - `OperationResult.system_log` is **never** exposed to HTTP clients.
-- Internal logs (`logs/actions.log`) continue as-is.
+- Internal logs (`logs/actions.log`) now include `client_id`, `operator_id`, and `source` for executed commands.
+- For web/HTTP requests, `source` is recorded as `"http"`.
 
 ## Static Web Client
 

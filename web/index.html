@@ -9,8 +9,17 @@
   <body>
     <main class="app">
       <header class="app__header">
-        <h1 id="storage-title">СКЛАД "ШВЕЙНА МАЙСТЕРНЯ"</h1>
-        <p id="storage-subtitle" class="app__subtitle">ШІ оператор online.</p>
+        <div class="app__header-main">
+          <h1 id="storage-title">СКЛАД "ШВЕЙНА МАЙСТЕРНЯ"</h1>
+          <p id="storage-subtitle" class="app__subtitle">ШІ оператор online.</p>
+        </div>
+        <div class="operator-panel" aria-live="polite">
+          <span class="operator-panel__label">Позивний:</span>
+          <strong id="operator-badge" class="operator-panel__value">—</strong>
+          <button id="operator-change-button" class="operator-panel__button" type="button">
+            змінити
+          </button>
+        </div>
       </header>
 
       <section class="chat" aria-live="polite" aria-label="Chat messages">
@@ -38,6 +47,41 @@
         </p>
       </div>
     </main>
+
+    <div
+      id="operator-overlay"
+      class="overlay"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="operator-modal-title"
+    >
+      <div class="overlay__backdrop"></div>
+      <div class="overlay__card">
+        <h2 id="operator-modal-title">Вкажи позивний оператора</h2>
+        <p class="overlay__text">
+          Цей позивний буде збережено на цьому пристрої та використано для аудиту дій.
+        </p>
+        <form id="operator-form" class="overlay__form" autocomplete="off">
+          <label class="overlay__label" for="operator-input">Позивний</label>
+          <input
+            id="operator-input"
+            class="overlay__input"
+            type="text"
+            maxlength="64"
+            placeholder="Наприклад: Falcon"
+            aria-label="Operator callsign"
+            required
+          />
+          <p id="operator-error" class="overlay__error" hidden>
+            Введи непорожній позивний до 64 символів.
+          </p>
+          <div class="overlay__actions">
+            <button id="operator-save-button" type="submit">Зберегти</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script src="web/app.js"></script>
   </body>

@@ -71,8 +71,11 @@ Permission handling:
 ## User identification
 
 - user_id parameter is supported by web client
-- Android client does NOT set or manage user_id at this stage
+- operator_id / callsign prompt is handled entirely by the shared web client
+- Android client does NOT set or manage user_id or operator_id at this stage
 - WebView loads plain `/zsus/` without query parameters
+- On first open without a stored callsign, the web UI asks for it before work starts
+- The callsign persists in WebView localStorage, so Android APK rebuild is NOT required for this feature
 - user_id support may be added later without breaking changes
 
 

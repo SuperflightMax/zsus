@@ -89,12 +89,25 @@ class ChatHandler(BaseHTTPRequestHandler):
         client_id = payload.get("client_id")
         if not isinstance(client_id, str) or not client_id.strip():
             client_id = str(uuid4())
+        else:
+            client_id = client_id.strip()
+
+        operator_id = payload.get("operator_id")
+        if isinstance(operator_id, str):
+            operator_id = operator_id.strip() or None
+        else:
+            operator_id = None
 
         try:
             session = self.server.session_manager.get(client_id)
             if session.active_storage_id is None and self.server.default_storage_id:
                 session.set_active_storage_id(self.server.default_storage_id)
-            result = session.handle_text(text)
+            result = session.handle_text(
+                text,
+                operator_id=operator_id,
+                client_id=client_id,
+                source="http",
+            )
             response = {"ok": True, "client_id": client_id, "reply": result.user_text}
             self._send_json(200, response)
         except Exception as exc:  # noqa: BLE001
