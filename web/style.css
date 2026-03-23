@@ -27,6 +27,18 @@ body {
   gap: 20px;
 }
 
+.app__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app__header-main {
+  min-width: 0;
+}
+
 .app__header h1 {
   margin: 0;
   font-size: 24px;
@@ -36,6 +48,39 @@ body {
   margin: 6px 0 0;
   color: #64748b;
   font-size: 14px;
+}
+
+.operator-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  border: 1px solid #bfdbfe;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.operator-panel__label {
+  color: #475569;
+}
+
+.operator-panel__value {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operator-panel__button {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
 }
 
 .chat {
@@ -99,7 +144,8 @@ body {
   background: #f1f5f9;
 }
 
-#send-button {
+#send-button,
+#operator-save-button {
   padding: 0 20px;
   border: none;
   border-radius: 10px;
@@ -107,9 +153,11 @@ body {
   color: white;
   font-size: 15px;
   cursor: pointer;
+  min-height: 44px;
 }
 
-#send-button:disabled {
+#send-button:disabled,
+#operator-save-button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
 }
@@ -164,4 +212,95 @@ body {
   font-size: 12px;
   color: #64748b;
   text-transform: lowercase;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 30;
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.overlay__card {
+  position: relative;
+  width: min(100%, 420px);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+}
+
+.overlay__card h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.overlay__text {
+  margin: 0 0 16px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.overlay__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.overlay__label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.overlay__input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+}
+
+.overlay__error {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.overlay__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 12px;
+  }
+
+  .app {
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .chat {
+    min-height: 280px;
+  }
+
+  .operator-panel {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 14px;
+  }
 }

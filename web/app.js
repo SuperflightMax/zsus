@@ -8,11 +8,22 @@ const micButton = document.getElementById("mic-button");
 const micWarning = document.getElementById("mic-warning");
 const storageTitle = document.getElementById("storage-title");
 const storageSubtitle = document.getElementById("storage-subtitle");
+const operatorBadge = document.getElementById("operator-badge");
+const operatorChangeButton = document.getElementById("operator-change-button");
+const operatorOverlay = document.getElementById("operator-overlay");
+const operatorForm = document.getElementById("operator-form");
+const operatorInput = document.getElementById("operator-input");
+const operatorError = document.getElementById("operator-error");
 const defaultInputPlaceholder = input ? input.placeholder : "";
 
 const params = new URLSearchParams(window.location.search);
 const userId = params.get("user_id");
+const operatorIdParam = params.get("operator_id");
+const callsignParam = params.get("callsign");
+const operatorStorageKey = "operator_id";
+const maxOperatorIdLength = 64;
 let clientId = null;
+let operatorId = null;
 let clientConfig = {
   audio_web_speech_enabled: true,
   audio_autosend: true,
@@ -26,6 +37,112 @@ let recognition = null;
 let recognitionTimer = null;
 let isListening = false;
 let isShowingListeningPlaceholder = false;
+let isBusy = false;
+
+function normalizeOperatorId(rawValue) {
+  if (typeof rawValue !== "string") {
+    return null;
+  }
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return null;
+  }
+  return trimmed.slice(0, maxOperatorIdLength);
+}
+
+function clearOperatorParamsFromUrl() {
+  if (!window.history || !window.history.replaceState) {
+    return;
+  }
+  if (!params.has("operator_id") && !params.has("callsign")) {
+    return;
+  }
+
+  const nextParams = new URLSearchParams(params);
+  nextParams.delete("operator_id");
+  nextParams.delete("callsign");
+
+  const query = nextParams.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+}
+
+function resolveOperatorId() {
+  const directOperatorId = normalizeOperatorId(operatorIdParam);
+  const directCallsign = normalizeOperatorId(callsignParam);
+  const compatibilitySeed = normalizeOperatorId(userId);
+  const urlOperatorId = directOperatorId || directCallsign || compatibilitySeed;
+
+  if (urlOperatorId) {
+    localStorage.setItem(operatorStorageKey, urlOperatorId);
+    if (directOperatorId || directCallsign) {
+      clearOperatorParamsFromUrl();
+    }
+    return urlOperatorId;
+  }
+
+  return normalizeOperatorId(localStorage.getItem(operatorStorageKey));
+}
+
+function persistOperatorId(value) {
+  operatorId = value;
+  localStorage.setItem(operatorStorageKey, value);
+  updateOperatorUi();
+  updateControlsState();
+}
+
+function updateOperatorUi() {
+  if (operatorBadge) {
+    operatorBadge.textContent = operatorId || "—";
+    operatorBadge.title = operatorId || "Позивний не задано";
+  }
+}
+
+function setOperatorError(message) {
+  if (!operatorError) {
+    return;
+  }
+  if (!message) {
+    operatorError.hidden = true;
+    operatorError.textContent = "";
+    return;
+  }
+  operatorError.textContent = message;
+  operatorError.hidden = false;
+}
+
+function showOperatorOverlay(prefillValue = "") {
+  if (!operatorOverlay || !operatorInput) {
+    return;
+  }
+  operatorOverlay.hidden = false;
+  operatorInput.value = prefillValue;
+  setOperatorError("");
+  window.setTimeout(() => {
+    operatorInput.focus();
+    operatorInput.select();
+  }, 0);
+}
+
+function hideOperatorOverlay() {
+  if (!operatorOverlay) {
+    return;
+  }
+  operatorOverlay.hidden = true;
+}
+
+function updateControlsState() {
+  const operatorReady = Boolean(operatorId);
+  if (input) {
+    input.disabled = isBusy || !operatorReady;
+  }
+  if (sendButton) {
+    sendButton.disabled = isBusy || !operatorReady;
+  }
+  if (micButton) {
+    micButton.disabled = isBusy || !operatorReady;
+  }
+}
 
 async function loadMeta() {
   try {
@@ -59,6 +176,9 @@ if (userId && userId.trim()) {
   }
 }
 
+operatorId = resolveOperatorId();
+updateOperatorUi();
+
 function appendMessage(text, type) {
   const item = document.createElement("li");
   item.className = `message message--${type}`;
@@ -68,14 +188,10 @@ function appendMessage(text, type) {
   return item;
 }
 
-function setBusy(isBusy) {
-  input.disabled = isBusy;
-  sendButton.disabled = isBusy;
-  if (micButton) {
-    micButton.disabled = isBusy;
-  }
+function setBusy(nextBusy) {
+  isBusy = nextBusy;
+  updateControlsState();
 }
-
 
 function scrollToBottom() {
   if (!chat) {
@@ -97,11 +213,16 @@ observer.observe(messages, {
 });
 
 async function sendMessage(text, options = {}) {
+  if (!operatorId) {
+    showOperatorOverlay();
+    return;
+  }
+
   setBusy(true);
   appendMessage(text, "user");
   const pending = appendMessage("…", "bot message--pending");
 
-  const payload = { text };
+  const payload = { text, operator_id: operatorId };
   if (clientId) {
     payload.client_id = clientId;
   }
@@ -118,9 +239,7 @@ async function sendMessage(text, options = {}) {
       const message = data && data.message ? data.message : "Помилка запиту";
       pending.textContent = `Помилка: ${message}`;
       pending.classList.remove("message--pending");
-
       scrollToBottom();
-
       return;
     }
 
@@ -136,9 +255,12 @@ async function sendMessage(text, options = {}) {
     pending.textContent = "Помилка: сервер недоступний";
     pending.classList.remove("message--pending");
     scrollToBottom();
-
   } finally {
     setBusy(false);
+    if (!operatorId) {
+      showOperatorOverlay();
+      return;
+    }
     if (options.suppressFocus) {
       input.blur();
       return;
@@ -202,6 +324,7 @@ function cleanupRecognition() {
   setListeningPlaceholder(false);
   recognition = null;
   isListening = false;
+  updateControlsState();
 }
 
 function setListeningPlaceholder(isActive) {
@@ -224,7 +347,12 @@ function setListeningPlaceholder(isActive) {
 }
 
 function startRecognition() {
-  if (!SpeechRecognition || isListening) {
+  if (!operatorId) {
+    showOperatorOverlay(operatorId || "");
+    return;
+  }
+
+  if (!SpeechRecognition || isListening || !micButton || micButton.disabled) {
     return;
   }
 
@@ -309,7 +437,10 @@ function attachMicHandlers() {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const text = input.value.trim();
-  if (!text) {
+  if (!text || !operatorId) {
+    if (!operatorId) {
+      showOperatorOverlay();
+    }
     return;
   }
   input.value = "";
@@ -323,9 +454,34 @@ input.addEventListener("keydown", (event) => {
   }
 });
 
+if (operatorChangeButton) {
+  operatorChangeButton.addEventListener("click", () => {
+    showOperatorOverlay(operatorId || "");
+  });
+}
+
+if (operatorForm) {
+  operatorForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const normalized = normalizeOperatorId(operatorInput.value);
+    if (!normalized) {
+      setOperatorError("Введи непорожній позивний до 64 символів.");
+      operatorInput.focus();
+      return;
+    }
+    persistOperatorId(normalized);
+    hideOperatorOverlay();
+    input.focus();
+  });
+}
+
 loadConfig().finally(() => {
   updateMicVisibility();
   attachMicHandlers();
+  updateControlsState();
+  if (!operatorId) {
+    showOperatorOverlay();
+    return;
+  }
+  input.focus();
 });
-
-input.focus();

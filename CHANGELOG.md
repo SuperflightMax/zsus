@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 38
+- Added persistent operator callsign support in the shared web client, including first-run prompt, localStorage reuse, URL seeding, and in-place callsign switching without changing Android APK code.
+- Updated HTTP/ChatSession audit plumbing so `/api/chat` accepts optional `operator_id` and `logs/actions.log` records `operator_id`, `client_id`, `source`, and failed core errors for executed commands.
+- Made direct `operator_id`/`callsign` URL bootstrap explicitly one-time on the client side by persisting it locally and dropping those params from the active address bar.
+
 # 37
 - Documented the path-based multi-instance VPS setup, nginx routing snippet, and localhost-only port guidance in OPERATIONS.md.
 
