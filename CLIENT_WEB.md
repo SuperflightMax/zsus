@@ -135,3 +135,13 @@ AUDIO_WEB_SPEECH_MAX_SECONDS валидируется (например 10..120)
 - у шапці клієнта завжди видно поточний позивний і кнопку `змінити`
 
 `user_id` як і раніше може задавати `client_id` для сумісності зі старими тестовими URL, але тепер той самий `user_id` також може ініціалізувати `operator_id`, якщо окремий `operator_id`/`callsign` не переданий.
+
+## operator_id: attribution, not auth
+
+`operator_id` у web-клиента — это метка attribution для audit trail, а не авторизация.
+Передача/изменение `operator_id` не даёт прав доступа сама по себе.
+
+## Transport separation
+
+Web path (HTTP chat flow) продолжает работать как раньше и может передавать `operator_id` собственным способом.
+Agent->CLI path использует отдельный JSON envelope (`meta.operator_id`, `meta.source`) и не отменяет web path.

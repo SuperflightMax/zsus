@@ -99,3 +99,31 @@ SYSTEM-вывод для LLM по умолчанию настраивается 
 
 Если в `.env` задан `DEFAULT_STORAGE`, CLI при старте активирует этот склад, если он существует.
 Если склад не найден, CLI пишет предупреждение и остаётся без активного склада.
+
+## JSON envelope metadata for agent-driven CLI
+
+Для JSON-команд поддерживается официальный envelope-контракт:
+
+```json
+{
+  "meta": {
+    "operator_id": "Falcon",
+    "source": "agent_whatsapp"
+  },
+  "command": "move",
+  "payload": {"...": "..."}
+}
+```
+
+Правила:
+- `meta` — transport/audit metadata, не business payload.
+- `meta.operator_id` — attribution (кто инициировал действие), это **не auth** и не security boundary.
+- `meta.source` — transport source (например `agent_whatsapp`).
+- CLI не вычисляет и не запрашивает `operator_id` сам: source of truth для agent path — metadata из JSON, пришедшего от агента.
+
+Нормализация в JSON path:
+- если `meta` отсутствует или не объект -> `{}`
+- `operator_id`: только string, trim, пустое значение -> `null`
+- `source`: только string, trim, пустое/невалидное -> дефолт `"cli"`
+
+Для каждого реально выполненного JSON CLI запроса создаётся запись в `logs/actions.log` в едином формате аудита (включая `operator_id` и `source`).

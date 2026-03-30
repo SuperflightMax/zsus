@@ -169,3 +169,25 @@ InMemoryStorageBackend без изменений core-логики.
 Если нет подтверждения после вопроса — нет изменений.
 
 
+
+---
+
+## Unified audit trail across execution paths
+
+Система имеет несколько transport путей (HTTP/Web, Agent->CLI->Core), но audit trail единый:
+- каждая реально исполненная команда должна попасть в `logs/actions.log`
+- формат записи унифицирован для всех путей
+- обязательные поля включают `operator_id` и `source`
+
+Для agent-driven CLI source of truth для operator attribution — JSON request metadata (`meta.operator_id`, `meta.source`).
+CLI в этом пути не должен вычислять/запрашивать operator mapping самостоятельно.
+
+`operator_id` — это action attribution, а не auth/ACL механизм.
+
+## Chat context retention rule
+
+После успешного выполнения запроса chat session не очищает контекст полностью:
+- сохраняются последние 3 пары реплик (до 6 записей `dialogue_context`)
+- если записей меньше 6 — сохраняется весь контекст
+
+Поведение при `need_more_info` и при failure path остаётся без изменений.
