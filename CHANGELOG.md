@@ -1,5 +1,14 @@
 # last change always at the top here (under this line)
 
+# 40
+- Simplified action audit logging call path in `ChatSession` to pass normalized `client_id`, `operator_id`, and `source` as explicit arguments per command execution.
+- Added HTTP integration tests that validate `/api/chat` operator/client/source forwarding and soft normalization for invalid `operator_id` values.
+
+# 39
+- Updated session success behavior to retain a short rolling dialogue context (last 3 pairs / 6 entries) instead of clearing it entirely.
+- Confirmed audit propagation in executed-command logs with `client_id`, `operator_id`, and `source`, including core-failure log entries.
+- Added regression coverage for success-path context retention and audit logging in `tests/test_chat_session.py`.
+
 # 38
 - Added persistent operator callsign support in the shared web client, including first-run prompt, localStorage reuse, URL seeding, and in-place callsign switching without changing Android APK code.
 - Updated HTTP/ChatSession audit plumbing so `/api/chat` accepts optional `operator_id` and `logs/actions.log` records `operator_id`, `client_id`, `source`, and failed core errors for executed commands.

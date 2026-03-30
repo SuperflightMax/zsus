@@ -29,6 +29,14 @@ class ChatSession:
     def set_active_storage_id(self, storage_id: Optional[str]) -> None:
         self.active_storage_id = storage_id
 
+    def _trim_dialogue_context(self, max_entries: int = 6) -> None:
+        if max_entries <= 0:
+            self.dialogue_context.clear()
+            return
+        if len(self.dialogue_context) <= max_entries:
+            return
+        self.dialogue_context = self.dialogue_context[-max_entries:]
+
     def handle_text(
         self,
         user_text: str,
@@ -79,13 +87,9 @@ class ChatSession:
                 response_text = f"{response_text}\n\nПитання:\n{questions}"
             return OperationResult.success(user_text=response_text, system_log=system_log)
 
-        self.dialogue_context.clear()
-
-        audit_context = {
-            "client_id": _normalize_optional_str(client_id),
-            "operator_id": _normalize_optional_str(operator_id),
-            "source": _normalize_optional_str(source),
-        }
+        normalized_client_id = _normalize_optional_str(client_id)
+        normalized_operator_id = _normalize_optional_str(operator_id)
+        normalized_source = _normalize_optional_str(source)
 
         for command in llm_result.commands:
             payload = command.get("payload") or {}
@@ -98,15 +102,23 @@ class ChatSession:
             }
             system_log.append(f"Executing: {json.dumps(command_payload, ensure_ascii=False)}")
             response = handle_command(command_payload)
-            _append_action_log(command_payload, response, audit_context=audit_context)
+            _append_action_log(
+                command_payload,
+                response,
+                client_id=normalized_client_id,
+                operator_id=normalized_operator_id,
+                source=normalized_source,
+            )
             system_log.append(f"Core result: {json.dumps(response.to_dict(), ensure_ascii=False)}")
             if not response.ok:
+                self.dialogue_context.clear()
                 user_text = (
                     f"{llm_result.assistant_text}\n\n"
                     "Сталася помилка під час виконання. Спробуй ще раз або уточни запит."
                 )
                 return OperationResult.failure(user_text=user_text, system_log=system_log)
 
+        self._trim_dialogue_context(max_entries=6)
         return OperationResult.success(user_text=llm_result.assistant_text, system_log=system_log)
 
 
@@ -121,7 +133,9 @@ def _append_action_log(
     command_payload: Dict[str, Any],
     response: OperationResult,
     *,
-    audit_context: Optional[Dict[str, Optional[str]]] = None,
+    client_id: Optional[str] = None,
+    operator_id: Optional[str] = None,
+    source: Optional[str] = None,
 ) -> None:
     log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -136,10 +150,9 @@ def _append_action_log(
         "payload": command_payload.get("payload"),
         "core_ok": response.ok,
     }
-    if audit_context:
-        entry["client_id"] = audit_context.get("client_id")
-        entry["operator_id"] = audit_context.get("operator_id")
-        entry["source"] = audit_context.get("source")
+    entry["client_id"] = _normalize_optional_str(client_id)
+    entry["operator_id"] = _normalize_optional_str(operator_id)
+    entry["source"] = _normalize_optional_str(source)
     if not response.ok:
         entry["core_error"] = response.user_text
     with log_path.open("a", encoding="utf-8") as handle:

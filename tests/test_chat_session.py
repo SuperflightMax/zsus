@@ -14,6 +14,30 @@ class DummyLLMOperator:
         return self._llm_result, snapshot, "test-model"
 
 
+class SequenceLLMOperator:
+    def __init__(self, llm_results):
+        self._llm_results = list(llm_results)
+        self.dialogue_contexts = []
+
+    def run(self, *, user_text: str, active_storage_id: str, dialogue_context: str):
+        self.dialogue_contexts.append(dialogue_context)
+        snapshot = SnapshotResult(ok=True, snapshot_text="snapshot", snapshot_json={}, system_log=[])
+        if self._llm_results:
+            llm_result = self._llm_results.pop(0)
+        else:
+            llm_result = LLMResult(
+                ok=True,
+                assistant_text="ok",
+                commands=[],
+                need_more_info=False,
+                questions=[],
+                raw_response=None,
+                parsed=None,
+                system_log=[],
+            )
+        return llm_result, snapshot, "test-model"
+
+
 def test_chat_session_keeps_context_on_need_more_info():
     llm_result = LLMResult(
         ok=True,
@@ -34,7 +58,7 @@ def test_chat_session_keeps_context_on_need_more_info():
     assert session.dialogue_context == ["USER: Hello", "ASSISTANT: Need more details."]
 
 
-def test_chat_session_clears_context_on_success():
+def test_chat_session_keeps_context_tail_on_success():
     llm_result = LLMResult(
         ok=True,
         assistant_text="All set.",
@@ -50,7 +74,7 @@ def test_chat_session_clears_context_on_success():
     result = session.handle_text("Process")
 
     assert result.ok is True
-    assert session.dialogue_context == []
+    assert session.dialogue_context == ["USER: Process", "ASSISTANT: All set."]
 
 
 def test_chat_session_clears_context_on_failure():
@@ -155,3 +179,42 @@ def test_chat_session_logs_audit_context_for_failed_command(monkeypatch, tmp_pat
     assert log_entry["source"] == "http"
     assert log_entry["core_ok"] is False
     assert log_entry["core_error"] == "not enough stock"
+
+
+def test_chat_session_success_path_keeps_last_three_pairs():
+    llm_result = LLMResult(
+        ok=True,
+        assistant_text="Done.",
+        commands=[],
+        need_more_info=False,
+        questions=[],
+        raw_response=None,
+        parsed=None,
+        system_log=[],
+    )
+    llm_operator = SequenceLLMOperator([llm_result, llm_result, llm_result, llm_result])
+    session = ChatSession(active_storage_id="storage", llm_operator=llm_operator)
+
+    session.handle_text("one")
+    session.handle_text("two")
+    session.handle_text("three")
+    result = session.handle_text("four")
+
+    assert result.ok is True
+    assert llm_operator.dialogue_contexts[-1] == (
+        "USER: one\n"
+        "ASSISTANT: Done.\n"
+        "USER: two\n"
+        "ASSISTANT: Done.\n"
+        "USER: three\n"
+        "ASSISTANT: Done.\n"
+        "USER: four"
+    )
+    assert session.dialogue_context == [
+        "USER: two",
+        "ASSISTANT: Done.",
+        "USER: three",
+        "ASSISTANT: Done.",
+        "USER: four",
+        "ASSISTANT: Done.",
+    ]
