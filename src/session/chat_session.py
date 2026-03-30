@@ -29,6 +29,14 @@ class ChatSession:
     def set_active_storage_id(self, storage_id: Optional[str]) -> None:
         self.active_storage_id = storage_id
 
+    def _trim_dialogue_context(self, max_entries: int = 6) -> None:
+        if max_entries <= 0:
+            self.dialogue_context.clear()
+            return
+        if len(self.dialogue_context) <= max_entries:
+            return
+        self.dialogue_context = self.dialogue_context[-max_entries:]
+
     def handle_text(
         self,
         user_text: str,
@@ -79,8 +87,6 @@ class ChatSession:
                 response_text = f"{response_text}\n\nПитання:\n{questions}"
             return OperationResult.success(user_text=response_text, system_log=system_log)
 
-        self.dialogue_context.clear()
-
         audit_context = {
             "client_id": _normalize_optional_str(client_id),
             "operator_id": _normalize_optional_str(operator_id),
@@ -101,12 +107,14 @@ class ChatSession:
             _append_action_log(command_payload, response, audit_context=audit_context)
             system_log.append(f"Core result: {json.dumps(response.to_dict(), ensure_ascii=False)}")
             if not response.ok:
+                self.dialogue_context.clear()
                 user_text = (
                     f"{llm_result.assistant_text}\n\n"
                     "Сталася помилка під час виконання. Спробуй ще раз або уточни запит."
                 )
                 return OperationResult.failure(user_text=user_text, system_log=system_log)
 
+        self._trim_dialogue_context(max_entries=6)
         return OperationResult.success(user_text=llm_result.assistant_text, system_log=system_log)
 
 
