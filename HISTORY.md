@@ -1,5 +1,9 @@
 # last change always at the top here (under this line)
 
+# 40
+- Hardened action-log audit field propagation by passing `client_id` / `operator_id` / `source` explicitly into `_append_action_log(...)` on each executed command.
+- Added HTTP-level regression tests that run a real in-process `ChatHTTPServer` and verify `/api/chat` forwards normalized `operator_id`, `client_id`, and `source="http"` into `ChatSession.handle_text(...)`.
+
 # 39
 - Preserved short dialogue memory after successful requests in `ChatSession`: instead of full reset, the session now keeps only the last 3 reply pairs (6 `USER/ASSISTANT` entries) for the next LLM turn.
 - Kept existing semantics for non-success branches: `need_more_info=true` still keeps context, and failed execution paths still clear context.

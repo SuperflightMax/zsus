@@ -87,6 +87,9 @@ class ChatSession:
                 response_text = f"{response_text}\n\nПитання:\n{questions}"
             return OperationResult.success(user_text=response_text, system_log=system_log)
 
+        normalized_client_id = _normalize_optional_str(client_id)
+        normalized_operator_id = _normalize_optional_str(operator_id)
+        normalized_source = _normalize_optional_str(source)
         audit_context = {
             "client_id": _normalize_optional_str(client_id),
             "operator_id": _normalize_optional_str(operator_id),
@@ -104,7 +107,13 @@ class ChatSession:
             }
             system_log.append(f"Executing: {json.dumps(command_payload, ensure_ascii=False)}")
             response = handle_command(command_payload)
-            _append_action_log(command_payload, response, audit_context=audit_context)
+            _append_action_log(
+                command_payload,
+                response,
+                client_id=normalized_client_id,
+                operator_id=normalized_operator_id,
+                source=normalized_source,
+            )
             system_log.append(f"Core result: {json.dumps(response.to_dict(), ensure_ascii=False)}")
             if not response.ok:
                 self.dialogue_context.clear()
@@ -129,7 +138,9 @@ def _append_action_log(
     command_payload: Dict[str, Any],
     response: OperationResult,
     *,
-    audit_context: Optional[Dict[str, Optional[str]]] = None,
+    client_id: Optional[str] = None,
+    operator_id: Optional[str] = None,
+    source: Optional[str] = None,
 ) -> None:
     log_dir = Path("logs")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -144,10 +155,9 @@ def _append_action_log(
         "payload": command_payload.get("payload"),
         "core_ok": response.ok,
     }
-    if audit_context:
-        entry["client_id"] = audit_context.get("client_id")
-        entry["operator_id"] = audit_context.get("operator_id")
-        entry["source"] = audit_context.get("source")
+    entry["client_id"] = _normalize_optional_str(client_id)
+    entry["operator_id"] = _normalize_optional_str(operator_id)
+    entry["source"] = _normalize_optional_str(source)
     if not response.ok:
         entry["core_error"] = response.user_text
     with log_path.open("a", encoding="utf-8") as handle:
