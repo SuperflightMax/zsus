@@ -247,3 +247,17 @@ CREATE TABLE meta (
 сложные агрегации
 
 Это сознательно отложено до следующих этапов.
+
+---
+
+## External audit stream (`logs/actions.log`)
+
+Помимо БД-таблицы `movements`, система ведёт transport-level audit stream в `logs/actions.log`.
+
+Назначение:
+- attribution (`operator_id`) и transport source (`source`) для исполненных команд
+- единый журнал для HTTP/Web и CLI/direct-core путей
+
+Важно:
+- `operator_id` в этом журнале — метка attribution, не auth.
+- для agent-driven CLI значение берётся из JSON metadata (`meta.operator_id`), а не из business payload.

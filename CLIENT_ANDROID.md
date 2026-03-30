@@ -109,3 +109,11 @@ Gradle and Android build artifacts must be excluded via .gitignore.
 - No authentication
 - No auto-update of APK
 - No Play Store publishing
+
+## operator_id attribution model
+
+Android client наследует web-контракт: callsign/operator_id используется как action attribution в аудите.
+Это не auth-уровень и не security boundary.
+
+Agent-driven CLI path в системе отдельный: там source of truth для `operator_id` — metadata JSON envelope от агента (`meta.operator_id`, `meta.source`).
+Android-клиент этот mapping не вычисляет и не хранит.

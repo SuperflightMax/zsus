@@ -1,3 +1,10 @@
+# 23
+- CLI JSON envelope now officially supports `meta.operator_id` and `meta.source` for agent-driven command attribution.
+- Direct CLI JSON -> core path now writes unified entries to `logs/actions.log` with normalized `operator_id`/`source`, including failure `core_error`.
+- Added shared action-log helper module reused by chat session and CLI direct path to keep one audit format.
+- Added regression tests for CLI JSON logging success, missing-operator case, and failure path.
+- Updated docs (`CLI.md`, `HTTP.md`, `CLIENT_WEB.md`, `CLIENT_ANDROID.md`, `ARCHITECTURE.md`, `DATABASE.md`) with audit and context-retention rules.
+
 # last change always at the top here (under this line)
 
 # 40

@@ -1,3 +1,10 @@
+# 23
+- Added official JSON CLI metadata contract support for direct core execution: `meta.operator_id` and `meta.source` are now softly normalized and used for audit attribution without touching business payload.
+- Wired direct JSON CLI execution path to write unified `logs/actions.log` entries (success and failure) via shared action-log helper, preserving `operator_id`, `source`, `core_ok`, and `core_error`.
+- Kept chat-session success behavior as retained context tail (last 3 dialogue pairs / 6 entries) and preserved existing need_more_info + failure semantics.
+- Added tests for CLI JSON logging with/without operator metadata and failure logging coverage.
+- Updated architecture/client/interface docs to document attribution semantics (`operator_id` is not auth), multi-transport audit rule, and context retention behavior.
+
 # last change always at the top here (under this line)
 
 # 40

@@ -167,3 +167,15 @@ boolean-поля принимают: 1/0, true/false, yes/no (case-insensitive)
 - `POST /chat` with `input.type` and attachments.
 - SSE / streaming responses.
 - Auth: `client_id` → `user_id`, permissions.
+
+## operator_id semantics
+
+`operator_id` в HTTP — это attribution метка для аудита действий.
+Это **не** механизм аутентификации и **не** access control boundary.
+
+HTTP/Web path сохраняется без изменений: клиент может передавать `operator_id` своим способом, а сервер мягко нормализует значение.
+
+## Multi-transport audit rule
+
+Независимо от transport path, все реально выполненные команды должны попадать в `logs/actions.log` в едином формате.
+Поля `operator_id` и `source` являются общими audit-полями для HTTP и CLI execution paths.

@@ -16,6 +16,7 @@ from ...core.engine import handle_command, set_default_backend
 from ...core.formatting import format_quantity
 from ...core.result import OperationResult
 from ...session import SessionManager
+from ...session.action_log import append_action_log, normalize_optional_str, normalize_source
 
 
 def configure_logging(level_name: str) -> None:
@@ -303,9 +304,27 @@ def _process_json_block(text: str, active_storage_id: str) -> None:
         _print_operation_result(OperationResult.failure(user_text="Не удалось прочитать JSON. Попробуйте ещё раз."))
         return
 
+    meta = parsed.get("meta")
+    meta_payload = meta if isinstance(meta, dict) else {}
+    operator_id = normalize_optional_str(meta_payload.get("operator_id"))
+    source = normalize_source(meta_payload.get("source"), default="cli")
+
     parsed_with_storage = dict(parsed)
+    parsed_with_storage.pop("meta", None)
     parsed_with_storage["storage_id"] = active_storage_id
+
     response = handle_command(parsed_with_storage)
+    append_action_log(
+        {
+            "storage_id": active_storage_id,
+            "command": parsed_with_storage.get("command"),
+            "payload": parsed_with_storage.get("payload"),
+        },
+        response,
+        operator_id=operator_id,
+        source=source,
+        source_default="cli",
+    )
     _print_operation_result(response)
 
 
