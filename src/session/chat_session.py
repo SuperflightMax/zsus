@@ -90,6 +90,11 @@ class ChatSession:
         normalized_client_id = _normalize_optional_str(client_id)
         normalized_operator_id = _normalize_optional_str(operator_id)
         normalized_source = _normalize_optional_str(source)
+        audit_context = {
+            "client_id": _normalize_optional_str(client_id),
+            "operator_id": _normalize_optional_str(operator_id),
+            "source": _normalize_optional_str(source),
+        }
 
         for command in llm_result.commands:
             payload = command.get("payload") or {}
