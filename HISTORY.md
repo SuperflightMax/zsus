@@ -1,5 +1,10 @@
 # last change always at the top here (under this line)
 
+# 39
+- Preserved short dialogue memory after successful requests in `ChatSession`: instead of full reset, the session now keeps only the last 3 reply pairs (6 `USER/ASSISTANT` entries) for the next LLM turn.
+- Kept existing semantics for non-success branches: `need_more_info=true` still keeps context, and failed execution paths still clear context.
+- Added/updated ChatSession tests to verify action-log audit fields (`operator_id`, `client_id`, `source`) on both successful and failed core execution, and to verify success-path context tail retention.
+
 # 38
 - Added a separate `operator_id`/callsign flow to the shared web client with localStorage persistence, first-open prompt, and in-UI callsign switching, while keeping the existing `client_id` session flow intact.
 - Extended the HTTP adapter to accept optional `operator_id` and forward audit context (`operator_id`, `client_id`, `source="http"`) into `ChatSession` without adding business logic to the transport layer.

@@ -44,7 +44,7 @@ Responsibilities:
   - system_log = debug trace (context, snapshot, raw JSON, executed commands etc.)
 - keep semantics identical to current CLI UX:
   - if need_more_info -> keep context (do not clear)
-  - if success without need_more_info -> clear context after execution (current behavior)
+  - if success without need_more_info -> keep only recent tail of context (last 3 pairs / 6 entries)
   - on LLM failure without need_more_info -> clear context (current behavior)
 
 ChatSession should be input-type ready:
