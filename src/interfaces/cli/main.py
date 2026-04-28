@@ -484,20 +484,23 @@ def _render_storage_table(snapshot: Dict[str, Dict[str, Dict[str, Any]]], max_wi
             entry = locations[location_key]
             qty = entry.get("qty")
             unit = entry.get("unit", "")
+            holder = entry.get("holder") or "-"
             item_display = _truncate_text(item_id, max_width)
             location_display = "(unplaced)" if location_key == "null" else _truncate_text(str(location_key), max_width)
-            rows.append((item_display, location_display, format_quantity(float(qty)), unit))
+            holder_display = _truncate_text(str(holder), max_width)
+            rows.append((item_display, location_display, holder_display, format_quantity(float(qty)), unit))
 
     item_width = max([len("Item")] + [len(row[0]) for row in rows])
     location_width = max([len("Location")] + [len(row[1]) for row in rows])
-    qty_width = max([len("Qty")] + [len(str(row[2])) for row in rows])
-    unit_width = max([len("Unit")] + [len(str(row[3])) for row in rows])
+    holder_width = max([len("Holder")] + [len(str(row[2])) for row in rows])
+    qty_width = max([len("Qty")] + [len(str(row[3])) for row in rows])
+    unit_width = max([len("Unit")] + [len(str(row[4])) for row in rows])
 
-    header = f"{'Item':<{item_width}}  {'Location':<{location_width}}  {'Qty':>{qty_width}}  {'Unit':<{unit_width}}"
-    separator = f"{'-' * item_width}  {'-' * location_width}  {'-' * qty_width}  {'-' * unit_width}"
+    header = f"{'Item':<{item_width}}  {'Location':<{location_width}}  {'Holder':<{holder_width}}  {'Qty':>{qty_width}}  {'Unit':<{unit_width}}"
+    separator = f"{'-' * item_width}  {'-' * location_width}  {'-' * holder_width}  {'-' * qty_width}  {'-' * unit_width}"
     lines = [header, separator]
-    for item_display, location_display, qty, unit in rows:
-        lines.append(f"{item_display:<{item_width}}  {location_display:<{location_width}}  {qty:>{qty_width}}  {unit:<{unit_width}}")
+    for item_display, location_display, holder_display, qty, unit in rows:
+        lines.append(f"{item_display:<{item_width}}  {location_display:<{location_width}}  {holder_display:<{holder_width}}  {qty:>{qty_width}}  {unit:<{unit_width}}")
     return lines
 
 

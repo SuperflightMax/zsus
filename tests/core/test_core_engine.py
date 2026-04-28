@@ -309,6 +309,127 @@ def test_unit_kept_without_override(engine: CoreEngine, backend: InMemoryStorage
     assert backend.get_storage_snapshot(storage_id) == {"sand": {"bag": {"qty": 3.0, "unit": "кг"}}}
 
 
+def test_intake_with_holder(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    response = engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {
+                "items": [
+                    {
+                        "item_id": "radio",
+                        "qty": 1,
+                        "location": "shelf",
+                        "holder": "Сокіл +380000000000",
+                    }
+                ]
+            },
+        }
+    )
+
+    assert response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "radio": {"shelf": {"qty": 1.0, "unit": "од", "holder": "Сокіл +380000000000"}}
+    }
+
+
+def test_intake_without_holder_does_not_clear_existing_holder(
+    engine: CoreEngine,
+    backend: InMemoryStorageBackend,
+    storage_id: str,
+):
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 1, "location": None, "holder": "Сокіл"}]},
+        }
+    )
+
+    response = engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 1, "location": None}]},
+        }
+    )
+
+    assert response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "radio": {None: {"qty": 2.0, "unit": "од", "holder": "Сокіл"}}
+    }
+
+
+def test_move_can_set_holder_on_same_location(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 1, "location": None}]},
+        }
+    )
+
+    response = engine.handle_command(
+        {
+            "command": "move",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio", "qty": 1, "from": None, "to": None, "holder": "Сокіл"},
+        }
+    )
+
+    assert response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "radio": {None: {"qty": 1.0, "unit": "од", "holder": "Сокіл"}}
+    }
+
+
+def test_move_can_clear_holder(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 1, "location": None, "holder": "Сокіл"}]},
+        }
+    )
+
+    response = engine.handle_command(
+        {
+            "command": "move",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio", "qty": 1, "from": None, "to": None, "holder": None},
+        }
+    )
+
+    assert response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {"radio": {None: {"qty": 1.0, "unit": "од"}}}
+
+
+def test_find_includes_holders_when_present(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
+    engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 1, "location": None, "holder": "Сокіл"}]},
+        }
+    )
+
+    response = engine.handle_command(
+        {
+            "command": "find",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio"},
+        }
+    )
+
+    assert response.ok is True
+    assert response.data == {
+        "item_id": "radio",
+        "total_qty": 1.0,
+        "locations": {"null": 1.0},
+        "holders": {"null": "Сокіл"},
+    }
+
+
 def test_find_single_location(engine: CoreEngine, backend: InMemoryStorageBackend, storage_id: str):
     engine.handle_command(
         {

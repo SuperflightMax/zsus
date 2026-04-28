@@ -39,10 +39,13 @@ MVP хранилище: SQLite (PostgreSQL поддерживается схем
 |-------------|----------|---------------------------|
 | item_id     | string   | ссылка на items.id        |
 | location_id | string \ | null | null = без локации |
+| holder      | string \ | null | свободная заметка “у кого / за кем закреплено” |
 | qty         | number   | количество                |
 | unit        | string   | одиниця виміру            |
 ```
 **Уникальный ключ:** `(item_id, location_id)`
+
+`holder` не является отдельной сущностью и не участвует в ключе. Это простая заметка к текущей позиции.
 
 ---
 
@@ -139,6 +142,7 @@ CREATE TABLE locations (
 CREATE TABLE stock (
     item_id TEXT NOT NULL,
     location_id TEXT NULL,
+    holder TEXT NULL,
     qty REAL NOT NULL CHECK (qty >= 0),
     unit TEXT NOT NULL DEFAULT 'од',
 
@@ -152,6 +156,7 @@ CREATE TABLE stock (
 );
 ```
 location_id = NULL → предмет просто на складе
+holder = NULL → предмет не закреплён/не отдан в пользование
 уникальность (item_id, location_id)
 всегда хранит текущее состояние
 

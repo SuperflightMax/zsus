@@ -34,6 +34,8 @@ class StorageBackend(Protocol):
         location: Optional[str],
         delta: float,
         unit: Optional[str] = None,
+        holder: Optional[str] = None,
+        update_holder: bool = False,
     ) -> float:
         ...
 
@@ -54,7 +56,7 @@ class StorageBackend(Protocol):
     def location_quantity(self, storage_id: str, item_id: str, location: Optional[str]) -> float:
         ...
 
-    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str]]:
+    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str, Optional[str]]]:
         ...
 
 
@@ -83,6 +85,8 @@ class InMemoryStorageBackend:
         location: Optional[str],
         delta: float,
         unit: Optional[str] = None,
+        holder: Optional[str] = None,
+        update_holder: bool = False,
     ) -> float:
         self.ensure_storage(storage_id)
         item_locations = self.storages[storage_id].setdefault(item_id, {})
@@ -97,9 +101,16 @@ class InMemoryStorageBackend:
         if entry is None:
             unit_to_use = unit or current_unit or DEFAULT_UNIT
             item_locations[location] = {"qty": new_qty, "unit": unit_to_use}
+            if update_holder and holder is not None:
+                item_locations[location]["holder"] = holder
         else:
             if unit:
                 entry["unit"] = unit
+            if update_holder:
+                if holder is None:
+                    entry.pop("holder", None)
+                else:
+                    entry["holder"] = holder
             entry["qty"] = new_qty
         return new_qty
 
@@ -128,11 +139,12 @@ class InMemoryStorageBackend:
         entry = self.storages.get(storage_id, {}).get(item_id, {}).get(location)
         return float(entry.get("qty", 0.0)) if entry else 0.0
 
-    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str]]:
+    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str, Optional[str]]]:
         entry = self.storages.get(storage_id, {}).get(item_id, {}).get(location)
         if not entry:
             return None
-        return float(entry.get("qty", 0.0)), str(entry.get("unit", DEFAULT_UNIT))
+        holder = entry.get("holder")
+        return float(entry.get("qty", 0.0)), str(entry.get("unit", DEFAULT_UNIT)), str(holder) if holder is not None else None
 
 
 class CoreEngine:
@@ -196,9 +208,19 @@ class CoreEngine:
             qty = entry.get("qty")
             location = self._normalize_location(entry.get("location"))
             unit = entry.get("unit")
+            update_holder = "holder" in entry
+            holder = self._normalize_holder(entry.get("holder")) if update_holder else None
             self._validate_item_id(item_id)
             self._validate_qty(qty)
-            self.backend.update_item_location(storage_id, item_id, location, qty, unit=unit)
+            self.backend.update_item_location(
+                storage_id,
+                item_id,
+                location,
+                qty,
+                unit=unit,
+                holder=holder,
+                update_holder=update_holder,
+            )
         return OperationResult.success(data={})
 
     def _move(self, storage_id: str, payload: Dict[str, Any]) -> OperationResult:
@@ -206,6 +228,8 @@ class CoreEngine:
         qty = payload.get("qty")
         from_location = self._normalize_location(payload.get("from"))
         to_location = self._normalize_location(payload.get("to"))
+        update_holder = "holder" in payload
+        holder = self._normalize_holder(payload.get("holder")) if update_holder else None
 
         self._validate_item_id(item_id)
         self._validate_qty(qty)
@@ -218,7 +242,15 @@ class CoreEngine:
 
         self.backend.update_item_location(storage_id, item_id, from_location, -qty)
         self.backend.remove_location_if_empty(storage_id, item_id, from_location)
-        self.backend.update_item_location(storage_id, item_id, to_location, qty, unit=unit)
+        self.backend.update_item_location(
+            storage_id,
+            item_id,
+            to_location,
+            qty,
+            unit=unit,
+            holder=holder,
+            update_holder=update_holder,
+        )
         return OperationResult.success(data={})
 
     def _consume(self, storage_id: str, payload: Dict[str, Any]) -> OperationResult:
@@ -250,13 +282,19 @@ class CoreEngine:
             raise ValueError("Предмет не знайдено.")
 
         total_qty = sum(entry["qty"] for entry in locations.values())
-        return OperationResult.success(
-            data={
-                "item_id": item_id,
-                "total_qty": total_qty,
-                "locations": {self._location_key(k): entry["qty"] for k, entry in locations.items()},
-            }
-        )
+        data = {
+            "item_id": item_id,
+            "total_qty": total_qty,
+            "locations": {self._location_key(k): entry["qty"] for k, entry in locations.items()},
+        }
+        holders = {
+            self._location_key(k): entry["holder"]
+            for k, entry in locations.items()
+            if entry.get("holder")
+        }
+        if holders:
+            data["holders"] = holders
+        return OperationResult.success(data=data)
 
     # helpers
 
@@ -272,16 +310,18 @@ class CoreEngine:
 
     @staticmethod
     def _serialize_snapshot(snapshot: Dict[str, Dict[Optional[str], Dict[str, Any]]]) -> Dict[str, Dict[str, Dict[str, Any]]]:
-        return {
-            item: {
-                CoreEngine._location_key(loc): {
+        serialized: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        for item, locations in snapshot.items():
+            serialized[item] = {}
+            for loc, entry in locations.items():
+                row = {
                     "qty": entry.get("qty"),
                     "unit": entry.get("unit", DEFAULT_UNIT),
                 }
-                for loc, entry in locations.items()
-            }
-            for item, locations in snapshot.items()
-        }
+                if entry.get("holder"):
+                    row["holder"] = entry["holder"]
+                serialized[item][CoreEngine._location_key(loc)] = row
+        return serialized
 
     @staticmethod
     def _normalize_location(location: Optional[Any]) -> Optional[Any]:
@@ -292,6 +332,15 @@ class CoreEngine:
         normalized = location.strip()
         if normalized.lower() == "склад":
             return None
+        return normalized or None
+
+    @staticmethod
+    def _normalize_holder(holder: Optional[Any]) -> Optional[str]:
+        if holder is None:
+            return None
+        if not isinstance(holder, str):
+            return None
+        normalized = holder.strip()
         return normalized or None
 
     @staticmethod

@@ -7,6 +7,14 @@
 
 # last change always at the top here (under this line)
 
+# 41
+- Added `holder` as a free-text note on each storage position so the system can answer “who has this item now” without introducing users, contacts, external flags, or ACL-like logic.
+- Kept core deliberately simple: `holder` can be supplied on `intake` items and on `move` target positions, `holder: null` clears it, omitted `holder` leaves existing notes alone, and `consume` continues to behave exactly like normal stock reduction.
+- Updated SQLite storage with a nullable `holder` column and automatic migration for existing databases, preserving old snapshots when no holder is present.
+- Updated list/find payloads, CLI tables, and LLM snapshot rendering to expose holder only when useful while keeping existing no-holder command behavior backward-compatible.
+- Documented the LLM-level rules for holder: ask once for a phone number, clarify when assigning расходники or quantities over 1, confirm before consuming a held position, and show candidate lists when the item/location is ambiguous.
+- Added regression tests for intake/move holder behavior, holder clearing, find holder output, SQLite persistence, and legacy SQLite holder-column migration.
+
 # 40
 - Hardened action-log audit field propagation by passing `client_id` / `operator_id` / `source` explicitly into `_append_action_log(...)` on each executed command.
 - Added HTTP-level regression tests that run a real in-process `ChatHTTPServer` and verify `/api/chat` forwards normalized `operator_id`, `client_id`, and `source="http"` into `ChatSession.handle_text(...)`.

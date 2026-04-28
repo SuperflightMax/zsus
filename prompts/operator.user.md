@@ -12,7 +12,7 @@ intake
 Додає предмети. Формат payload:
 {{
 "items": [
-{{ "item_id": "string", "qty": 1, "unit": "string", "location": "string або null (склад)" }}
+{{ "item_id": "string", "qty": 1, "unit": "string", "location": "string або null (склад)", "holder": "string або null (опціонально)" }}
 ]
 }}
 storage_id завжди ACTIVE_STORAGE.
@@ -23,7 +23,8 @@ move
 "item_id": "string",
 "qty": 1,
 "from": "string або null (склад)",
-"to": "string або null (склад)"
+"to": "string або null (склад)",
+"holder": "string або null (опціонально; нова нотатка кому віддано/за ким закріплено)"
 }}
 
 consume

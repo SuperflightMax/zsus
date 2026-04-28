@@ -77,6 +77,34 @@ def test_move_and_consume_cleanup(tmp_path: Path):
     assert engine.backend.get_storage_snapshot(storage_id) == {"radio": {"shelf": {"qty": 1.0, "unit": "од"}}}
 
 
+def test_holder_persists_across_sessions(tmp_path: Path):
+    storage_id = "sqlite_storage"
+    storages_root = tmp_path / "storages"
+
+    engine = CoreEngine(SqliteStorageBackend(storages_root))
+    response = engine.handle_command(
+        {
+            "command": "intake",
+            "storage_id": storage_id,
+            "payload": {"items": [{"item_id": "radio", "qty": 1, "location": None, "holder": "Сокіл"}]},
+        }
+    )
+
+    assert response.ok is True
+
+    engine_reopened = CoreEngine(SqliteStorageBackend(storages_root))
+    list_response = engine_reopened.handle_command(
+        {
+            "command": "list",
+            "storage_id": storage_id,
+            "payload": {},
+        }
+    )
+
+    assert list_response.ok is True
+    assert list_response.data == {"radio": {"null": {"qty": 1.0, "unit": "од", "holder": "Сокіл"}}}
+
+
 def test_multiple_storages_isolated(tmp_path: Path):
     storages_root = tmp_path / "storages"
     backend = SqliteStorageBackend(storages_root)
@@ -160,3 +188,45 @@ def test_unit_column_migrates_existing_db(tmp_path: Path):
     snapshot_data = backend.get_storage_snapshot(storage_id)
 
     assert snapshot_data == {"radio": {None: {"qty": 2.0, "unit": "од"}}}
+
+
+def test_holder_column_migrates_existing_db(tmp_path: Path):
+    storage_id = "legacy_storage"
+    storages_root = tmp_path / "storages"
+    db_path = storages_root / storage_id / "storage.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        """
+        CREATE TABLE items (
+            item_name  TEXT NOT NULL,
+            location   TEXT,
+            qty        REAL NOT NULL,
+            unit       TEXT NOT NULL DEFAULT 'од',
+            PRIMARY KEY (item_name, location)
+        )
+        """
+    )
+    conn.execute("INSERT INTO items (item_name, location, qty, unit) VALUES (?, ?, ?, ?)", ("radio", None, 2, "од"))
+    conn.commit()
+    conn.close()
+
+    backend = SqliteStorageBackend(storages_root)
+    snapshot_data = backend.get_storage_snapshot(storage_id)
+
+    assert snapshot_data == {"radio": {None: {"qty": 2.0, "unit": "од"}}}
+
+    engine = CoreEngine(backend)
+    response = engine.handle_command(
+        {
+            "command": "move",
+            "storage_id": storage_id,
+            "payload": {"item_id": "radio", "qty": 1, "from": None, "to": None, "holder": "Сокіл"},
+        }
+    )
+
+    assert response.ok is True
+    assert backend.get_storage_snapshot(storage_id) == {
+        "radio": {None: {"qty": 2.0, "unit": "од", "holder": "Сокіл"}}
+    }

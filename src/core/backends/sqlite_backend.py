@@ -22,6 +22,7 @@ class SqliteStorageBackend:
         CREATE TABLE IF NOT EXISTS items (
           item_name  TEXT NOT NULL,
           location   TEXT,
+          holder     TEXT,
           qty        REAL NOT NULL,
           unit       TEXT NOT NULL DEFAULT 'од',
           PRIMARY KEY (item_name, location)
@@ -65,13 +66,16 @@ class SqliteStorageBackend:
         with self._lock_for(storage_id):
             conn = self._get_conn(storage_id)
             snapshot: Dict[str, Dict[Optional[str], Dict[str, object]]] = {}
-            cursor = conn.execute("SELECT item_name, location, qty, unit FROM items")
+            cursor = conn.execute("SELECT item_name, location, holder, qty, unit FROM items")
             for row in cursor.fetchall():
                 item_name = row["item_name"]
                 location = row["location"]
                 qty = row["qty"]
                 unit = row["unit"]
-                snapshot.setdefault(item_name, {})[location] = {"qty": qty, "unit": unit}
+                entry = {"qty": qty, "unit": unit}
+                if row["holder"]:
+                    entry["holder"] = row["holder"]
+                snapshot.setdefault(item_name, {})[location] = entry
             return snapshot
 
     def update_item_location(
@@ -81,6 +85,8 @@ class SqliteStorageBackend:
         location: Optional[str],
         delta: float,
         unit: Optional[str] = None,
+        holder: Optional[str] = None,
+        update_holder: bool = False,
     ) -> float:
         with self._lock_for(storage_id):
             conn = self._get_conn(storage_id)
@@ -91,7 +97,16 @@ class SqliteStorageBackend:
             unit_to_store = unit or current_unit
 
             if entry is not None:
-                if unit_to_store:
+                if unit_to_store and update_holder:
+                    conn.execute(
+                        """
+                        UPDATE items
+                        SET qty = ?, unit = ?, holder = ?
+                        WHERE item_name = ? AND location IS ?
+                        """,
+                        (new_qty, unit_to_store, holder, item_id, location),
+                    )
+                elif unit_to_store:
                     conn.execute(
                         """
                         UPDATE items
@@ -99,6 +114,15 @@ class SqliteStorageBackend:
                         WHERE item_name = ? AND location IS ?
                         """,
                         (new_qty, unit_to_store, item_id, location),
+                    )
+                elif update_holder:
+                    conn.execute(
+                        """
+                        UPDATE items
+                        SET qty = ?, holder = ?
+                        WHERE item_name = ? AND location IS ?
+                        """,
+                        (new_qty, holder, item_id, location),
                     )
                 else:
                     conn.execute(
@@ -112,8 +136,8 @@ class SqliteStorageBackend:
             else:
                 unit_to_store = unit_to_store or "од"
                 conn.execute(
-                    "INSERT INTO items (item_name, location, qty, unit) VALUES (?, ?, ?, ?)",
-                    (item_id, location, new_qty, unit_to_store),
+                    "INSERT INTO items (item_name, location, holder, qty, unit) VALUES (?, ?, ?, ?, ?)",
+                    (item_id, location, holder if update_holder else None, new_qty, unit_to_store),
                 )
 
             conn.commit()
@@ -167,17 +191,17 @@ class SqliteStorageBackend:
             row = cursor.fetchone()
             return float(row["qty"]) if row else 0.0
 
-    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str]]:
+    def location_entry(self, storage_id: str, item_id: str, location: Optional[str]) -> Optional[Tuple[float, str, Optional[str]]]:
         with self._lock_for(storage_id):
             conn = self._get_conn(storage_id)
             cursor = conn.execute(
-                "SELECT qty, unit FROM items WHERE item_name = ? AND location IS ?",
+                "SELECT qty, unit, holder FROM items WHERE item_name = ? AND location IS ?",
                 (item_id, location),
             )
             row = cursor.fetchone()
             if not row:
                 return None
-            return float(row["qty"]), str(row["unit"])
+            return float(row["qty"]), str(row["unit"]), row["holder"]
 
     # internal helpers
 
@@ -209,6 +233,7 @@ class SqliteStorageBackend:
             CREATE TABLE IF NOT EXISTS items (
                 item_name  TEXT NOT NULL,
                 location   TEXT,
+                holder     TEXT,
                 qty        REAL NOT NULL,
                 unit       TEXT NOT NULL DEFAULT 'од',
                 PRIMARY KEY (item_name, location)
@@ -216,6 +241,7 @@ class SqliteStorageBackend:
             """
         )
         SqliteStorageBackend._ensure_unit_column(conn)
+        SqliteStorageBackend._ensure_holder_column(conn)
         conn.commit()
 
     @staticmethod
@@ -224,3 +250,10 @@ class SqliteStorageBackend:
         columns = {row[1] for row in cursor.fetchall()}
         if "unit" not in columns:
             conn.execute("ALTER TABLE items ADD COLUMN unit TEXT NOT NULL DEFAULT 'од'")
+
+    @staticmethod
+    def _ensure_holder_column(conn: sqlite3.Connection) -> None:
+        cursor = conn.execute("PRAGMA table_info(items)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "holder" not in columns:
+            conn.execute("ALTER TABLE items ADD COLUMN holder TEXT")

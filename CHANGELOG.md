@@ -7,6 +7,12 @@
 
 # last change always at the top here (under this line)
 
+# 41
+- Added a simple free-text `holder` note on storage positions to track who currently has or is assigned an item.
+- Extended core intake/move/list/find and SQLite persistence with backward-compatible holder handling and migration.
+- Updated LLM/CLI snapshots and prompts so holder is shown to the agent and all clarification rules stay in the LLM layer.
+- Added holder regression coverage for in-memory core behavior and SQLite persistence/migration.
+
 # 40
 - Simplified action audit logging call path in `ChatSession` to pass normalized `client_id`, `operator_id`, and `source` as explicit arguments per command execution.
 - Added HTTP integration tests that validate `/api/chat` operator/client/source forwarding and soft normalization for invalid `operator_id` values.
